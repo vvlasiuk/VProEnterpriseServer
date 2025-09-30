@@ -1,0 +1,46 @@
+{
+  "common": {
+    "service_running": "Сервіс працює",
+    "version": "Версія",
+    "environment": "Середовище",
+    "development": "Розробка",
+    "production": "Продакшн",
+    "contact": "Контакт",
+    "documentation": "Документація",
+    "status": "Статус",
+    "database": "База даних",
+    "protocol": "Протокол",
+    "endpoints": "Кінцеві точки",
+    "debug_mode": "Режим відладки",
+    "language_changed": "Мову змінено успішно"
+  },
+  "auth": {
+    "login_success": "Успішна авторизація",
+    "login_failed": "Невірний логін або пароль",
+    "token_expired": "Токен прострочений",
+    "access_denied": "Доступ заборонений",
+    "admin_required": "Потрібні права адміністратора",
+    "user_not_found": "Користувача не знайдено",
+    "logout_success": "Успішний вихід з системи"
+  },
+  "users": {
+    "user_created": "Користувача створено",
+    "user_updated": "Користувача оновлено",
+    "user_deleted": "Користувача видалено",
+    "user_not_found": "Користувача не знайдено",
+    "users_list": "Список користувачів"
+  },
+  "health": {
+    "service_healthy": "Сервіс здоровий",
+    "database_connected": "База даних підключена",
+    "all_systems_operational": "Всі системи працюють"
+  },
+  "errors": {
+    "server_error": "Помилка сервера",
+    "database_error": "Помилка бази даних",
+    "validation_error": "Помилка валідації",
+    "not_found": "Не знайдено",
+    "unauthorized": "Не авторизований",
+    "forbidden": "Заборонено"
+  }
+}

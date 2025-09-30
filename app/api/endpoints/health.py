@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from datetime import datetime
 from app.core.config import settings
+from app.core.server_setup import get_ssl_config
 
 router = APIRouter()
 
@@ -31,4 +32,23 @@ async def health_check_db():
             "pool_status": "mock_ready"
         },
         "timestamp": datetime.utcnow()
+    }
+
+@router.get("/ssl")
+async def ssl_status():
+    """Статус SSL конфігурації"""
+    ssl_config = get_ssl_config()
+    
+    return {
+        "ssl_enabled": bool(ssl_config),
+        "ssl_config": {
+            "has_keyfile": "ssl_keyfile" in ssl_config,
+            "has_certfile": "ssl_certfile" in ssl_config,
+            "has_password": "ssl_keyfile_password" in ssl_config
+        } if ssl_config else {},
+        "settings": {
+            "USE_SSL": getattr(settings, 'USE_SSL', False),
+            "SSL_KEYFILE": getattr(settings, 'SSL_KEYFILE', None),
+            "SSL_CERTFILE": getattr(settings, 'SSL_CERTFILE', None)
+        }
     }

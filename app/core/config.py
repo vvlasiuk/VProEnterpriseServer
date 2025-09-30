@@ -20,7 +20,7 @@ class Settings(BaseSettings):
         )
     
     # Server Configuration
-    HOST: str = "0.0.0.0"
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
     DEBUG: bool = True
     
@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "VProEnterpriseServer"
     VERSION: str = "1.0.0"
     
+    # JWT Configuration
+    JWT_SECRET_KEY: str = "your-super-secret-jwt-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

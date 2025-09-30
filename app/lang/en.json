@@ -1,45 +1,34 @@
 {
   "common": {
     "service_running": "Service is running",
-    "version": "Version",
-    "environment": "Environment", 
+    "environment": "Environment",
     "development": "Development",
-    "production": "Production",
-    "contact": "Contact",
-    "documentation": "Documentation",
-    "status": "Status",
-    "database": "Database",
-    "protocol": "Protocol",
-    "endpoints": "Endpoints",
-    "debug_mode": "Debug mode"
+    "production": "Production"
+  },
+  "server": {
+    "starting_server": "Starting server",
+    "environment": "Environment",
+    "current_language": "Current language",
+    "available_languages": "Available languages",
+    "ssl_enabled": "Enabled",
+    "ssl_disabled": "Disabled",
+    "ssl_certificate": "Certificate",
+    "ssl_keyfile": "Key file",
+    "ssl_keyfile_missing": "SSL enabled but SSL_KEYFILE not specified",
+    "ssl_certfile_missing": "SSL enabled but SSL_CERTFILE not specified",
+    "startup_error": "Startup error",
+    "alternative_startup": "Alternative startup methods",
+    "ssl_command_line": "With SSL via command line",
+    "no_ssl_command_line": "Without SSL via command line",
+    "python_command": "Via Python"
   },
   "auth": {
     "login_success": "Login successful",
-    "login_failed": "Invalid username or password",
-    "token_expired": "Token expired",
-    "access_denied": "Access denied",
-    "admin_required": "Admin access required",
-    "user_not_found": "User not found",
-    "logout_success": "Logout successful"
+    "login_failed": "Login failed",
+    "access_denied": "Access denied"
   },
   "users": {
     "user_created": "User created",
-    "user_updated": "User updated", 
-    "user_deleted": "User deleted",
-    "user_not_found": "User not found",
-    "users_list": "Users list"
-  },
-  "health": {
-    "service_healthy": "Service is healthy",
-    "database_connected": "Database connected",
-    "all_systems_operational": "All systems operational"
-  },
-  "errors": {
-    "server_error": "Server error",
-    "database_error": "Database error",
-    "validation_error": "Validation error",
-    "not_found": "Not found",
-    "unauthorized": "Unauthorized",
-    "forbidden": "Forbidden"
+    "user_not_found": "User not found"
   }
 }

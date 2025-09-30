@@ -1,46 +1,34 @@
 {
   "common": {
     "service_running": "Сервіс працює",
-    "version": "Версія",
     "environment": "Середовище",
     "development": "Розробка",
-    "production": "Продакшн",
-    "contact": "Контакт",
-    "documentation": "Документація",
-    "status": "Статус",
-    "database": "База даних",
-    "protocol": "Протокол",
-    "endpoints": "Кінцеві точки",
-    "debug_mode": "Режим відладки",
-    "language_changed": "Мову змінено успішно"
+    "production": "Продакшн"
+  },
+  "server": {
+    "starting_server": "Запуск сервера",
+    "environment": "Середовище",
+    "current_language": "Поточна мова",
+    "available_languages": "Доступні мови",
+    "ssl_enabled": "Увімкнено",
+    "ssl_disabled": "Вимкнено",
+    "ssl_certificate": "Сертифікат",
+    "ssl_keyfile": "Файл ключа",
+    "ssl_keyfile_missing": "SSL увімкнено, але SSL_KEYFILE не вказано",
+    "ssl_certfile_missing": "SSL увімкнено, але SSL_CERTFILE не вказано",
+    "startup_error": "Помилка запуску",
+    "alternative_startup": "Альтернативні способи запуску",
+    "ssl_command_line": "З SSL через командний рядок",
+    "no_ssl_command_line": "Без SSL через командний рядок",
+    "python_command": "Через Python"
   },
   "auth": {
-    "login_success": "Успішна авторизація",
-    "login_failed": "Невірний логін або пароль",
-    "token_expired": "Токен прострочений",
-    "access_denied": "Доступ заборонений",
-    "admin_required": "Потрібні права адміністратора",
-    "user_not_found": "Користувача не знайдено",
-    "logout_success": "Успішний вихід з системи"
+    "login_success": "Успішний вхід",
+    "login_failed": "Помилка входу",
+    "access_denied": "Доступ заборонено"
   },
   "users": {
     "user_created": "Користувача створено",
-    "user_updated": "Користувача оновлено",
-    "user_deleted": "Користувача видалено",
-    "user_not_found": "Користувача не знайдено",
-    "users_list": "Список користувачів"
-  },
-  "health": {
-    "service_healthy": "Сервіс здоровий",
-    "database_connected": "База даних підключена",
-    "all_systems_operational": "Всі системи працюють"
-  },
-  "errors": {
-    "server_error": "Помилка сервера",
-    "database_error": "Помилка бази даних",
-    "validation_error": "Помилка валідації",
-    "not_found": "Не знайдено",
-    "unauthorized": "Не авторизований",
-    "forbidden": "Заборонено"
+    "user_not_found": "Користувача не знайдено"
   }
 }

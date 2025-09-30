@@ -1,80 +1,62 @@
+from app.core.config import settings
 import json
 import os
-from typing import Dict, Optional
-from fastapi import Request
 
-class Localization:
+class Localizer:
     def __init__(self):
-        self.translations: Dict[str, Dict] = {}
-        self.default_lang = "uk"
-        self.current_lang = "uk"  # За замовчуванням українська
-        self.load_translations()
-    
-    def load_translations(self):
-        """Завантаження файлів локалізації"""
-        # Шлях до папки lang відносно поточного файлу
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        lang_dir = os.path.join(current_dir, "..", "lang")
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+        lang_code = settings.CURRENT_LANGUAGE
+
+        lang_path = os.path.join(project_root, "app", "lang", f"{lang_code}.json")
+
+        with open(lang_path, "r", encoding="utf-8") as f:
+            self.translations = json.load(f)
+        
+        # Ініціалізація кешу
+        self._translation_cache = {}
+
+    def t(self, key: str) -> str:
+        """Максимально швидка версія"""
+        # Швидка перевірка кешу
+        cached = self._translation_cache.get(key)
+        if cached is not None:
+            return cached
+        
+        # Розділяємо ключ
+        parts = key.split(".")
+        value = self.translations
+        
+        # Швидкий прохід без додаткових перевірок
+        try:
+            for part in parts:
+                value = value[part]
+            
+            # Кешуємо результат
+            result = str(value)
+            self._translation_cache[key] = result
+            return result
+            
+        except (KeyError, TypeError):
+            # Кешуємо помилку теж
+            error_result = f"[{key}]"
+            self._translation_cache[key] = error_result
+            return error_result
+        
+    def get_available_languages(self):
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        lang_dir = os.path.join(project_root, "app", "lang")
         
         if not os.path.exists(lang_dir):
-            print(f"⚠️ Папка {lang_dir} не знайдена")
-            return
+            return [settings.CURRENT_LANGUAGE]
         
+        available_langs = []
         for file_name in os.listdir(lang_dir):
             if file_name.endswith('.json'):
                 lang_code = file_name.replace('.json', '')
-                file_path = os.path.join(lang_dir, file_name)
-                
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        self.translations[lang_code] = json.load(f)
-                        print(f"✅ Завантажено мову: {lang_code}")
-                except Exception as e:
-                    print(f"⚠️ Помилка завантаження {file_path}: {e}")
-    
-    def get(self, key: str, category: str = "common", lang: Optional[str] = None) -> str:
-        """Отримання перекладу з категорією"""
-        lang = lang or self.current_lang
+                available_langs.append(lang_code)
         
-        # Спробувати поточну мову
-        if (lang in self.translations and 
-            category in self.translations[lang] and 
-            key in self.translations[lang][category]):
-            return self.translations[lang][category][key]
-        
-        # Якщо не знайдено - спробувати мову за замовчуванням
-        if (self.default_lang in self.translations and 
-            category in self.translations[self.default_lang] and 
-            key in self.translations[self.default_lang][category]):
-            return self.translations[self.default_lang][category][key]
-        
-        # Якщо нічого не знайдено - повернути ключ
-        return f"{category}.{key}"
+        return available_langs if available_langs else [settings.CURRENT_LANGUAGE]
     
-    def set_language(self, lang: str):
-        """Встановлення поточної мови"""
-        if lang in self.translations:
-            self.current_lang = lang
-            print(f"🌍 Мова змінена на: {lang}")
-        else:
-            print(f"⚠️ Мова {lang} не підтримується")
-    
-    def get_from_request(self, request: Request) -> str:
-        lang = request.path_params.get("lang", self.default_lang)
-        
-        # Простий парсинг Accept-Language
-        if "uk" in lang.lower():
-            return "uk"
-        else:
-            return "en"
-    
-    def get_available_languages(self) -> list:
-        """Список доступних мов"""
-        return list(self.translations.keys())
-    
-    def get_current_language(self) -> str:
-        """Отримання поточної мови"""
-        return self.current_lang
-    
-# Глобальний об'єкт локалізації
-i18n = Localization()
+    def get_current_language(self):
+        return settings.CURRENT_LANGUAGE

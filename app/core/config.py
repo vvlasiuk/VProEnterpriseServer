@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     SSL_CERTFILE: Optional[str] = None
     SSL_KEYFILE_PASSWORD: Optional[str] = None
     
+    CURRENT_LANGUAGE: str = "en"
+
     # App Configuration
     APP_NAME: str = "VProEnterpriseServer"
     VERSION: str = "1.0.0"

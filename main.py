@@ -2,6 +2,12 @@ import sys
 import os
 import logging
 from contextlib import asynccontextmanager
+import zipfile
+
+# Створюємо папку logs якщо не існує
+logs_dir = "logs"
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
 
 # Налаштування логування
 logging.basicConfig(
@@ -15,19 +21,29 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Виправлення шляхів для PyInstaller
+# Виправлення шляхів для PyInstaller та zipapp
 if getattr(sys, 'frozen', False):
-    # Якщо запущено як executable
+    # PyInstaller executable
     application_path = os.path.dirname(sys.executable)
-    # Для onefile версії
     if hasattr(sys, '_MEIPASS'):
         bundle_path = sys._MEIPASS
     else:
         bundle_path = application_path
+    os.chdir(application_path)
 else:
-    # Якщо запущено як скрипт Python
-    application_path = os.path.dirname(os.path.abspath(__file__))
-    bundle_path = application_path
+    # Python скрипт або zipapp
+    file_path = os.path.abspath(__file__)
+    
+    # Перевіряємо, чи це zipapp
+    if '.pyz' in file_path or file_path.endswith('.pyz'):
+        # Для zipapp не змінюємо директорію
+        application_path = os.getcwd()  # Поточна директорія
+        bundle_path = file_path
+    else:
+        # Звичайний Python скрипт
+        application_path = os.path.dirname(file_path)
+        bundle_path = application_path
+        os.chdir(application_path)
 
 # Встановлюємо робочу директорію
 os.chdir(application_path)
@@ -51,10 +67,20 @@ localizer = get_localizer()
 async def lifespan(app: FastAPI):
     # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.VERSION}")
-    logger.info(f"Language: {settings.CURRENT_LANGUAGE}")
-    logger.info(f"Debug mode: {settings.DEBUG}")
+    
+    # Ініціалізація бази даних
+    from app.db.database import db_manager
+    try:
+        await db_manager.create_pool()
+        logger.info("Database pool initialized")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        raise
+    
     yield
+    
     # Shutdown
+    await db_manager.close_pool()
     logger.info("Shutting down server")
 
 # FastAPI app
@@ -84,7 +110,7 @@ app.add_middleware(
 if not settings.DEBUG:
     app.add_middleware(
         TrustedHostMiddleware, 
-        allowed_hosts=["yourdomain.com", "*.yourdomain.com"]
+        allowed_hosts=settings.TRUSTED_HOSTS
     )
 
 # Request logging middleware
@@ -134,13 +160,34 @@ async def root():
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     """Favicon endpoint"""
-    favicon_path = os.path.join(bundle_path, "app", "static", "favicon.ico")
-    if os.path.exists(favicon_path):
-        return FileResponse(favicon_path, media_type="image/x-icon")
-    else:
+    # Перевіряємо, чи запущено з zipapp архіву
+    if '.pyz' in __file__:
+        import zipfile
         from fastapi import Response
-        return Response(status_code=204)
+        
+        # Знаходимо архів
+        archive_path = __file__.split('.pyz')[0] + '.pyz'
+        
+        try:
+            with zipfile.ZipFile(archive_path, 'r') as archive:
+                with archive.open("app/static/favicon.ico") as f:
+                    content = f.read()
+                    return Response(content=content, media_type="image/x-icon")
+        except KeyError:
+            return Response(status_code=204)
+    else:
+        # Звичайний запуск
+        favicon_path = os.path.join(bundle_path, "app", "static", "favicon.ico")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path, media_type="image/x-icon")
+        else:
+            from fastapi import Response
+            return Response(status_code=204)
+
+def start_server():
+    """Функція для запуску сервера (для zipapp сумісності)"""
+    from app.core.server_setup import start_server as _start_server
+    _start_server()
 
 if __name__ == "__main__":
-    from app.core.server_setup import start_server
     start_server()

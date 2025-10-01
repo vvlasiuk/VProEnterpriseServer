@@ -39,8 +39,20 @@ class Settings(BaseSettings):
     # JWT Configuration
     JWT_SECRET_KEY: str = "your-super-secret-jwt-key-change-in-production"
     JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    if DEBUG:
+        JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 днів
+    else:
+        JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 хвилин
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Trusted hosts для production
+    TRUSTED_HOSTS: list = [
+        "localhost", 
+        "127.0.0.1", 
+        "0.0.0.0",
+        "yourdomain.com",
+        "*.yourdomain.com"
+    ]
 
     class Config:
         env_file = ".env"

@@ -1,17 +1,35 @@
 from app.core.config import settings
 import json
 import os
+import sys
 
 class Localizer:
     def __init__(self):
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
         lang_code = settings.CURRENT_LANGUAGE
 
-        lang_path = os.path.join(project_root, "app", "lang", f"{lang_code}.json")
-
-        with open(lang_path, "r", encoding="utf-8") as f:
-            self.translations = json.load(f)
+        # Перевіряємо, чи запущено з zipapp архіву
+        if hasattr(sys.modules[__name__], '__file__') and '.pyz' in __file__:
+            # Запуск з zipapp архіву
+            import zipfile
+            
+            # Знаходимо архів
+            archive_path = __file__.split('.pyz')[0] + '.pyz'
+            
+            with zipfile.ZipFile(archive_path, 'r') as archive:
+                lang_file_path = f"app/lang/{lang_code}.json"
+                try:
+                    with archive.open(lang_file_path) as f:
+                        content = f.read().decode('utf-8')
+                        self.translations = json.loads(content)
+                except KeyError:
+                    raise FileNotFoundError(f"Language file {lang_file_path} not found in archive")
+        else:
+            # Звичайний запуск
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            lang_path = os.path.join(project_root, "app", "lang", f"{lang_code}.json")
+            
+            with open(lang_path, "r", encoding="utf-8") as f:
+                self.translations = json.load(f)
         
         # Ініціалізація кешу
         self._translation_cache = {}

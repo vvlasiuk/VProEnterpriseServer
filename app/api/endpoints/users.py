@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict
 from datetime import datetime
 from app.core.security import get_current_user, require_admin_role
+from app.services.database_service import DatabaseService
 
 router = APIRouter()
 

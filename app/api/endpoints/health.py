@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from datetime import datetime
 from app.core.config import settings
 from app.core.server_setup import get_ssl_config
+from app.services.database_service import DatabaseService
 
 router = APIRouter()
 
@@ -23,16 +24,20 @@ async def health_check():
 @router.get("/db")
 async def health_check_db():
     """Детальна перевірка MS SQL (заглушка)"""
-    return {
-        "status": "healthy",
-        "database": {
-            "type": "Microsoft SQL Server",
-            "connection": "mock_active",
-            "driver": settings.DB_DRIVER,
-            "pool_status": "mock_ready"
-        },
-        "timestamp": datetime.utcnow()
-    }
+    try:
+        result = await DatabaseService.execute_scalar("SELECT 1")
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "server": f"{settings.DB_SERVER}:{settings.DB_PORT}",
+            "test_result": result
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e)
+        }
 
 @router.get("/ssl")
 async def ssl_status():

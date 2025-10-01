@@ -2,6 +2,7 @@ import uvicorn
 from typing import Dict, Any
 from app.core.config import settings
 from app.core.app_globals import get_localizer
+import multiprocessing
 
 def get_ssl_config() -> Dict[str, Any]:
     """Отримання SSL конфігурації"""
@@ -28,18 +29,31 @@ def get_ssl_config() -> Dict[str, Any]:
     
     return ssl_params
 
+def get_optimal_workers() -> int:
+    """Визначення кількості workers"""
+    if settings.DEBUG:
+        return 1
+    
+    cpu_count = multiprocessing.cpu_count()
+    if hasattr(settings, 'WORKERS') and settings.WORKERS:
+        return min(int(settings.WORKERS), cpu_count * 4)
+    
+    return min(cpu_count * 2, 8)
+
 def print_server_info():
     host = str(settings.HOST)
     port = int(settings.PORT)
     reload = bool(settings.DEBUG)
     ssl_params = get_ssl_config()
-    
+    workers = get_optimal_workers()    
+
     localizer = get_localizer()
     
     print("Starting server:")
     print(f"  Host: {host}")
     print(f"  Port: {port}")
     print(f"  Environment: {'Development' if settings.DEBUG else 'Production'}")
+    print(f"  Workers: {workers}")
     print(f"  Reload: {reload}")
     print(f"  Current language: {localizer.get_current_language()}")
     print(f"  Available languages: {localizer.get_available_languages()}")
@@ -53,17 +67,40 @@ def print_server_info():
     
     return host, port, reload, ssl_params
 
+def validate_port(host: str, port: int) -> bool:
+    """Перевірка доступності порту"""
+    if settings.DEBUG:
+        return True  # В development режимі не перевіряємо
+    
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((host, port))
+        return True
+    except OSError:
+        print(f"❌ Port {port} is already in use")
+        return False
+    
 def start_server(app_module: str = "main:app"):    
     host, port, reload, ssl_params = print_server_info()
+
+    if not validate_port(host, port):
+        print("ERROR: Port validation failed")
+        return
 
     try:
         uvicorn.run(
             app_module,
             host=host,
             port=port,
-            reload=reload,
+            reload=False,
+            log_level="debug" if settings.DEBUG else "info",
+            access_log=not settings.DEBUG,  # Логи тільки в production
+            use_colors=settings.DEBUG,
             **ssl_params
         )
+    except KeyboardInterrupt:
+        print("\n🛑 Server stopped by user")
     except Exception as e:
         print(f"ERROR: Server startup failed: {e}")
         print_fallback_commands(ssl_params)

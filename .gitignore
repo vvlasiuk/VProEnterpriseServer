@@ -68,3 +68,6 @@ docs/_build/
 htmlcov/
 .coverage
 .coverage.*
+
+# Copilot files
+.copilot*

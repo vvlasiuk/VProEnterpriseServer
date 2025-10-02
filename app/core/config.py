@@ -54,6 +54,16 @@ class Settings(BaseSettings):
         "*.yourdomain.com"
     ]
 
+    DB_SCHEMA_FILE: str = "db_schema.yaml"
+
+    # Шляхи до схем
+    DB_PARENT_TABLES: str = "app/core/schemas/parent_tables.yaml"
+    DB_CORE_SCHEMA: str = "app/core/schemas/core_schema.yaml"
+    DB_PLUGINS_DIR: str = "plugins"
+
+    ENABLED_PLUGINS: list = []
+    # ENABLED_PLUGINS: list = ["SalesAnalytics", "inventory", "billing", "reports"]
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

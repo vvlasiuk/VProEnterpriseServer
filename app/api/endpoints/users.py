@@ -13,11 +13,11 @@ MOCK_USERS = [
 ]
 
 @router.get("/")
-async def get_users(current_user: Dict = Depends(get_current_user)):
-    """Отримати список користувачів (потрібна авторизація)"""
+async def get_users():
+    """Отримати список користувачів (публічний доступ)"""
     return {
         "users": MOCK_USERS,
-        "requested_by": current_user["username"]
+        "total": len(MOCK_USERS)
     }
 
 @router.get("/{user_id}")

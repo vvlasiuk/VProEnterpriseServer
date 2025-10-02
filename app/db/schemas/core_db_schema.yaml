@@ -1,0 +1,126 @@
+# Основні таблиці системи
+version: "1.0.0"
+description: "Core system tables"
+
+tables:
+  # Користувачі системи
+  users:
+    parent: "entity"
+    columns:
+      username:
+        type: "NVARCHAR(50)"
+        nullable: false
+        unique: true
+        comment: "Логін користувача"
+      email:
+        type: "NVARCHAR(100)"
+        nullable: false
+        unique: true
+        comment: "Email адреса"
+      password_hash:
+        type: "NVARCHAR(255)"
+        nullable: false
+        comment: "Хеш пароля"
+      first_name:
+        type: "NVARCHAR(100)"
+        nullable: true
+        comment: "Ім'я"
+      last_name:
+        type: "NVARCHAR(100)"
+        nullable: true
+        comment: "Прізвище"
+      phone:
+        type: "NVARCHAR(20)"
+        nullable: true
+        comment: "Телефон"
+      last_login:
+        type: "DATETIME2"
+        nullable: true
+        comment: "Останній вхід"
+      is_admin:
+        type: "BIT"
+        default: 0
+        comment: "Адміністратор"
+    indexes:
+      - name: "IX_users_username"
+        columns: ["username"]
+        unique: true
+      - name: "IX_users_email"
+        columns: ["email"]
+        unique: true
+
+  # Ролі користувачів
+  roles:
+    parent: "entity"
+    columns:
+      permissions:
+        type: "NTEXT"
+        nullable: true
+        comment: "JSON з дозволами"
+    indexes:
+      - name: "IX_roles_code"
+        columns: ["code"]
+        unique: true
+
+  # Зв'язок користувачів і ролей
+  user_roles:
+    columns:
+      id:
+        type: "BIGINT"
+        primary_key: true
+        auto_increment: true
+      user_id:
+        type: "BIGINT"
+        nullable: false
+        foreign_key: "users.id"
+        comment: "Користувач"
+      role_id:
+        type: "BIGINT"
+        nullable: false
+        foreign_key: "roles.id"
+        comment: "Роль"
+      assigned_at:
+        type: "DATETIME2"
+        default: "GETDATE()"
+        comment: "Дата призначення"
+      assigned_by:
+        type: "BIGINT"
+        nullable: false
+        foreign_key: "users.id"
+        comment: "Хто призначив"
+    indexes:
+      - name: "IX_user_roles_user_role"
+        columns: ["user_id", "role_id"]
+        unique: true
+
+  # Системні налаштування
+  settings:
+    columns:
+      id:
+        type: "BIGINT"
+        primary_key: true
+        auto_increment: true
+      setting_key:
+        type: "NVARCHAR(100)"
+        nullable: false
+        unique: true
+        comment: "Ключ налаштування"
+      setting_value:
+        type: "NTEXT"
+        nullable: true
+        comment: "Значення (JSON)"
+      setting_type:
+        type: "NVARCHAR(20)"
+        nullable: false
+        default: "'string'"
+        comment: "Тип: string, number, boolean, json"
+      is_public:
+        type: "BIT"
+        default: 0
+        comment: "Доступне через API"
+      updated_at:
+        type: "DATETIME2"
+        default: "GETDATE()"
+      updated_by:
+        type: "BIGINT"
+        foreign_key: "users.id"

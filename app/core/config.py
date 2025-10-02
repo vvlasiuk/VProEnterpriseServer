@@ -57,8 +57,8 @@ class Settings(BaseSettings):
     DB_SCHEMA_FILE: str = "db_schema.yaml"
 
     # Шляхи до схем
-    DB_PARENT_TABLES: str = "app/core/schemas/parent_tables.yaml"
-    DB_CORE_SCHEMA: str = "app/core/schemas/core_schema.yaml"
+    DB_PARENT_CORE_SCHEMA: str = "app/db/schemas/parent_core_db_schema.yaml"
+    DB_CORE_SCHEMA: str = "app/db/schemas/core_db_schema.yaml"
     DB_PLUGINS_DIR: str = "plugins"
 
     ENABLED_PLUGINS: list = []

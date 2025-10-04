@@ -1,0 +1,27 @@
+# Батьківські таблиці для наслідування
+parent_tables:
+  
+  # Базовий шаблон для операцій/транзакцій
+  transaction:
+    id:
+      type: "BIGINT"
+      primary_key: true
+      auto_increment: true
+    transaction_date:
+      type: "DATETIME2"
+      nullable: false
+      default: "GETDATE()"
+    amount:
+      type: "DECIMAL(18,2)"
+      nullable: false
+      default: 0
+    currency_code:
+      type: "NVARCHAR(3)"
+      nullable: false
+      default: "'UAH'"
+    created_at:
+      type: "DATETIME2"
+      default: "GETDATE()"
+    created_by:
+      type: "BIGINT"
+      foreign_key: "users.id"

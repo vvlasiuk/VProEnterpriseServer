@@ -1,1 +1,1 @@
-python VProEnterpriseServer.pyz
+python main.py

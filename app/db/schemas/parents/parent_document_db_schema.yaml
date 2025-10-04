@@ -1,0 +1,47 @@
+# Батьківські таблиці для наслідування
+parent_tables:
+  
+  # Базовий шаблон для всіх документів
+  document:
+    id:
+      type: "BIGINT"
+      primary_key: true
+      auto_increment: true
+    doc_number:
+      type: "NVARCHAR(50)"
+      nullable: false
+      unique: true
+      comment: "Номер документа"
+    doc_date:
+      type: "DATETIME2"
+      nullable: false
+      default: "GETDATE()"
+      comment: "Дата документа"
+    created_at:
+      type: "DATETIME2"
+      default: "GETDATE()"
+      comment: "Дата створення"
+    created_by:
+      type: "BIGINT"
+      nullable: false
+      foreign_key: "users.id"
+      comment: "Хто створив"
+    updated_at:
+      type: "DATETIME2"
+      nullable: true
+      comment: "Дата останнього оновлення"
+    updated_by:
+      type: "BIGINT"
+      nullable: true
+      foreign_key: "users.id"
+      comment: "Хто оновив"
+    status:
+      type: "NVARCHAR(20)"
+      nullable: false
+      default: "'draft'"
+      comment: "Статус документа"
+    notes:
+      type: "NTEXT"
+      nullable: true
+      comment: "Примітки"
+

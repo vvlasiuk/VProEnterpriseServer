@@ -11,24 +11,32 @@ class SchemaManager:
     """Менеджер для роботи зі схемами бази даних"""
     
     def __init__(self):
-        self.parent_tables: Dict[str, Dict] = {}
+        self.schemas_dir = settings.DB_SCHEMAS_DIR
+        self.parent_tables = {}
+        self.tables = {}
         self.core_schema: Dict = {}
         self.plugin_schemas: Dict[str, Dict] = {}
         self.resolved_tables: Dict[str, Dict] = {}
         self._loaded = False
     
-    def load_all_schemas(self) -> None:
-        """Завантажити всі схеми з файлів"""
-        try:
-            self.load_parent_tables()
-            self.load_core_schema()
-            self.load_plugin_schemas()
-            self._resolve_all_tables()
-            self._loaded = True
-            logger.info("All schemas loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load schemas: {e}")
-            raise
+    def load_all_schemas(self):
+        """Завантажити всі схеми з усіх тек"""
+        schema_files = self.discover_schema_files()
+        
+        # Завантажити parent схеми
+        for parent_file in schema_files.get('parents', []):
+            self._load_parent_schema(parent_file)
+        
+        # Завантажити схеми таблиць (всі теки окрім parents)
+        for category in schema_files:
+            if category == 'parents':
+                continue  # parents вже завантажені вище
+            for schema_file in schema_files[category]:
+                self._load_table_schema(schema_file)
+        
+        # ДОДАТИ: Розв'язати наслідування
+        self._resolve_all_tables()
+        self._loaded = True
     
     def load_parent_tables(self) -> Dict:
         """Завантажити батьківські таблиці"""
@@ -79,9 +87,8 @@ class SchemaManager:
     
     def _resolve_all_tables(self) -> None:
         """Розв'язати наслідування для всіх таблиць"""
-        # Спочатку core таблиці
-        core_tables = self.core_schema.get('tables', {})
-        for table_name, table_def in core_tables.items():
+        # Тепер таблиці в self.tables замість self.core_schema
+        for table_name, table_def in self.tables.items():
             self.resolved_tables[table_name] = self.resolve_table_inheritance(table_name, table_def)
         
         # Потім plugin таблиці
@@ -132,7 +139,7 @@ class SchemaManager:
         primary_keys = []
         
         for col_name, col_def in columns.items():
-            col_sql = self.generate_column_definition(col_name, col_def)
+            col_sql = self._generate_column_definition(col_name, col_def)
             column_definitions.append(col_sql)
             
             if col_def.get('primary_key'):
@@ -151,31 +158,36 @@ class SchemaManager:
         
         return create_sql
     
-    def generate_column_definition(self, column_name: str, column_def: Dict) -> str:
-        """Згенерувати визначення колонки"""
-        col_type = column_def.get('type', 'NVARCHAR(255)')
-        parts = [f"{column_name} {col_type}"]
+    def _generate_column_definition(self, column_name: str, column_def: dict) -> str:
+        """Генерує SQL визначення колонки"""
+        column_type = column_def.get('type', 'NVARCHAR(255)')
         
-        # IDENTITY для auto_increment
-        if column_def.get('auto_increment'):
-            parts.append("IDENTITY(1,1)")
+        # Primary key колонки завжди NOT NULL
+        if column_def.get('primary_key', False):
+            nullable = False
+        else:
+            nullable = column_def.get('nullable', True)
         
         # NULL/NOT NULL
-        if column_def.get('nullable', True) is False:
-            parts.append("NOT NULL")
+        if nullable is False:
+            null_sql = "NOT NULL"
         else:
-            parts.append("NULL")
+            null_sql = "NULL"
         
         # DEFAULT value
         if 'default' in column_def:
             default_val = column_def['default']
-            parts.append(f"DEFAULT {default_val}")
+            default_sql = f"DEFAULT {default_val}"
+        else:
+            default_sql = ""
         
         # UNIQUE constraint
-        if column_def.get('unique'):
-            parts.append("UNIQUE")
+        unique_sql = "UNIQUE" if column_def.get('unique') else ""
         
-        return ' '.join(parts)
+        # Об'єднуємо частини визначення колонки
+        col_definition = f"{column_name} {column_type} {null_sql} {default_sql} {unique_sql}".strip()
+        
+        return col_definition
     
     def generate_indexes_sql(self, table_name: str, indexes: List[Dict]) -> List[str]:
         """Згенерувати SQL для індексів"""
@@ -256,3 +268,99 @@ class SchemaManager:
             remaining -= set(no_deps)
         
         return ordered
+    
+    def discover_schema_files(self) -> Dict[str, List[str]]:
+        """Автоматично знайти всі схеми по підпапках"""
+        schema_files = {}
+        
+        base_path = Path(self.schemas_dir)
+        
+        # Сканувати всі підпапки
+        for subfolder in base_path.iterdir():
+            if subfolder.is_dir():
+                folder_name = subfolder.name
+                yaml_files = list(subfolder.glob("*.yaml"))
+                schema_files[folder_name] = [str(f) for f in yaml_files]
+        
+        return schema_files
+    
+    def _load_parent_schema(self, file_path: str):
+        """Завантажити parent схему з файлу"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = yaml.safe_load(file)
+                if data and 'parent_tables' in data:
+                    parent_tables = data['parent_tables']
+                    if parent_tables:  # Перевірка на None
+                        self.parent_tables.update(parent_tables)
+                        logger.info(f"Loaded {len(parent_tables)} parent tables from {file_path}")
+                    else:
+                        logger.warning(f"Empty parent_tables in {file_path}")
+                else:
+                    logger.warning(f"No parent_tables found in {file_path}")
+        except Exception as e:
+            logger.error(f"Failed to load parent schema from {file_path}: {e}")
+
+    def _load_table_schema(self, file_path: str):
+        """Завантажити схему таблиць з файлу"""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = yaml.safe_load(file)
+            if 'tables' in data:
+                self.tables.update(data['tables'])
+    
+    def generate_alter_commands(self, table_name: str, differences: Dict[str, List]) -> List[str]:
+        """Згенерувати команди ALTER TABLE"""
+        commands = []
+        
+        # Логування для діагностики
+        logger.info(f"Generating ALTER commands for table {table_name}")
+        logger.info(f"Add columns: {[col[0] for col in differences.get('add_columns', [])]}")
+        logger.info(f"Modify columns: {[col[0] for col in differences.get('modify_columns', [])]}")
+        logger.info(f"Drop columns: {differences.get('drop_columns', [])}")
+        
+        # Додати колонки
+        for col_name, col_def in differences.get('add_columns', []):
+            cmd = self._generate_add_column(table_name, col_name, col_def)
+            logger.info(f"ADD COLUMN: {cmd}")
+            commands.append(cmd)
+        
+        # Змінити колонки
+        for col_name, col_def in differences.get('modify_columns', []):
+            cmd = self._generate_modify_column(table_name, col_name, col_def)
+            logger.info(f"MODIFY COLUMN: {cmd}")
+            commands.append(cmd)
+        
+        # Видалити колонки
+        for col_name in differences.get('drop_columns', []):
+            cmd = self._generate_drop_column(table_name, col_name)
+            logger.info(f"DROP COLUMN: {cmd}")
+            commands.append(cmd)
+        
+        return commands
+    
+    def _generate_add_column(self, table_name: str, column_name: str, column_def: Dict) -> str:
+        """Генерує SQL команду для додавання колонки"""
+        column_type = column_def.get('type', 'NVARCHAR(255)')
+        nullable = "NULL" if column_def.get('nullable', True) else "NOT NULL"
+        default = f"DEFAULT {column_def['default']}" if 'default' in column_def else ""
+        unique = "UNIQUE" if column_def.get('unique') else ""
+        
+        add_column_sql = f"ALTER TABLE {table_name} ADD {column_name} {column_type} {nullable} {default} {unique};"
+        
+        return add_column_sql
+    
+    def _generate_modify_column(self, table_name: str, column_name: str, column_def: Dict) -> str:
+        """Генерує SQL команду для зміни колонки"""
+        column_type = column_def.get('type', 'NVARCHAR(255)')
+        nullable = "NULL" if column_def.get('nullable', True) else "NOT NULL"
+        default = f"DEFAULT {column_def['default']}" if 'default' in column_def else ""
+        unique = "UNIQUE" if column_def.get('unique') else ""
+        
+        modify_column_sql = f"ALTER TABLE {table_name} ALTER COLUMN {column_name} {column_type} {nullable} {default} {unique};"
+        
+        return modify_column_sql
+    
+    def _generate_drop_column(self, table_name: str, column_name: str) -> str:
+        """Генерує SQL команду для видалення колонки"""
+        drop_column_sql = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
+        return drop_column_sql

@@ -54,11 +54,12 @@ class Settings(BaseSettings):
         "*.yourdomain.com"
     ]
 
-    DB_SCHEMA_FILE: str = "db_schema.yaml"
+    # DB_SCHEMA_FILE: str = "db_schema.yaml"
 
     # Шляхи до схем
-    DB_PARENT_CORE_SCHEMA: str = "app/db/schemas/parent_core_db_schema.yaml"
-    DB_CORE_SCHEMA: str = "app/db/schemas/core_db_schema.yaml"
+    # DB_PARENT_CORE_SCHEMA: str = "app/db/schemas/parent_core_db_schema.yaml"
+    # DB_CORE_SCHEMA: str = "app/db/schemas/core_db_schema.yaml"
+    DB_SCHEMAS_DIR: str = "app/db/schemas"
     DB_PLUGINS_DIR: str = "plugins"
 
     ENABLED_PLUGINS: list = []

@@ -14,11 +14,46 @@ MOCK_USERS = [
 
 @router.get("/")
 async def get_users():
-    """Отримати список користувачів (публічний доступ)"""
-    return {
-        "users": MOCK_USERS,
-        "total": len(MOCK_USERS)
-    }
+    """Отримати список користувачів з бази даних (публічний доступ)"""
+    try:
+        # SQL запит для отримання користувачів
+        query = """
+        SELECT 
+            id,
+            name,
+            full_name
+        FROM users 
+        WHERE is_active = 1
+        ORDER BY full_name
+        """
+        
+        # Виконати запит
+        users_data = await DatabaseService.execute_query(query)
+        
+        # Перетворити результат
+        users = []
+        for row in users_data:
+            user = {
+                "id": row["id"],
+                "name": row["name"],
+                "full_name": row["full_name"]
+            }
+            users.append(user)
+        
+        return {
+            "users": users,
+            "total": len(users),
+            "source": "database"
+        }
+        
+    except Exception as e:
+        # Fallback на MOCK дані якщо БД недоступна
+        return {
+            "users": MOCK_USERS,
+            "total": len(MOCK_USERS),
+            "source": "mock",
+            "error": str(e)
+        }
 
 @router.get("/{user_id}")
 async def get_user(user_id: int, current_user: Dict = Depends(get_current_user)):

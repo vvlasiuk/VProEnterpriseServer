@@ -1,0 +1,17 @@
+# Основні таблиці системи
+version: "1.0.0"
+description: "Core system tables"
+
+tables:
+  # Ролі користувачів
+  roles:
+    parent: "catalog"
+    columns:
+      permissions:
+        type: "NTEXT"
+        nullable: true
+        comment: "JSON з дозволами"
+    indexes:
+      - name: "IX_roles_code"
+        columns: ["code"]
+        unique: true

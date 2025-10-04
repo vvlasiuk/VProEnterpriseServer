@@ -10,12 +10,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from app.db.migration_service import MigrationService
 from app.db.schema_manager import SchemaManager
 from app.db.database import db_manager
-from app.services.database_service import DatabaseService  # Додати цей рядок
+from app.services.database_service import DatabaseService
+from app.db.schema_comparator import SchemaComparator        # Додати цей рядок
+from app.db.alter_table_generator import AlterTableGenerator # Додати цей рядок
 from app.core.config import settings
 import logging
 
 # Налаштування логування для CLI
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
 
 async def init_database():
     """Ініціалізувати підключення до БД для CLI"""
@@ -39,29 +41,37 @@ def db():
     pass
 
 @db.command()
-def migrate():
-    """Застосувати міграції - створити всі таблиці"""
-    click.echo("🔄 Starting database migration...")
+@click.option('--dry-run', is_flag=True, help='Show what would be changed without executing')
+@click.option('--update-existing', is_flag=True, help='Update existing tables')
+def migrate(dry_run, update_existing):
+    """Застосувати міграції"""
     
     async def run_migration():
-        # Ініціалізуємо БД
         if not await init_database():
             return False
             
         try:
             migration_service = MigrationService()
-            results = await migration_service.create_all_tables()
             
-            # Виводимо результати
-            if results["created_tables"]:
-                click.echo("✅ Created tables:")
-                for table in results["created_tables"]:
-                    click.echo(f"   • {table}")
-            
-            if results["skipped_tables"]:
-                click.echo("⏭️  Skipped tables:")
-                for table in results["skipped_tables"]:
-                    click.echo(f"   • {table}")
+            if update_existing:
+                # Оновити існуючі таблиці
+                results = await migration_service.update_existing_tables(dry_run=dry_run)
+                
+                if dry_run:
+                    click.echo("🔍 Planned changes:")
+                    for change in results["changes_planned"]:
+                        click.echo(f"\n📋 Table: {change['table']}")
+                        for cmd in change['commands']:
+                            click.echo(f"   • {cmd}")
+                else:
+                    if results["updated_tables"]:
+                        click.echo("✅ Updated tables:")
+                        for table in results["updated_tables"]:
+                            click.echo(f"   • {table}")
+            else:
+                # Створити нові таблиці (існуючий код)
+                results = await migration_service.create_all_tables()
+                # ... існуючий код виводу ...
             
             if results["errors"]:
                 click.echo("❌ Errors:")
@@ -69,7 +79,6 @@ def migrate():
                     click.echo(f"   • {error}")
                 return False
             
-            click.echo("✅ Migration completed successfully!")
             return True
             
         except Exception as e:
@@ -397,6 +406,72 @@ def clean_database(force):
             await cleanup_database()
     
     success = asyncio.run(run_clean())
+    sys.exit(0 if success else 1)
+
+@db.command()
+@click.argument('table_name')
+def diff_table(table_name):
+    """Показати різниці між БД та схемою для таблиці"""
+    
+    async def show_diff():
+        if not await init_database():
+            return False
+            
+        try:
+            schema_manager = SchemaManager()
+            schema_manager.load_all_schemas()
+            resolved_tables = schema_manager.get_all_tables()
+            
+            if table_name not in resolved_tables:
+                click.echo(f"❌ Table '{table_name}' not found in schema")
+                return False
+            
+            comparator = SchemaComparator()
+            generator = AlterTableGenerator()
+            
+            # Структури
+            db_structure = await comparator.get_table_structure(table_name)
+            yaml_structure = resolved_tables[table_name]
+            
+            # Різниці
+            differences = comparator.compare_table_structures(db_structure, yaml_structure)
+            
+            if not any(differences.values()):
+                click.echo(f"✅ Table '{table_name}' is up to date")
+                return True
+            
+            click.echo(f"📋 Differences for table '{table_name}':")
+            
+            if differences['add_columns']:
+                click.echo("\n➕ Columns to add:")
+                for col_name, col_def in differences['add_columns']:
+                    click.echo(f"   • {col_name}: {col_def.get('type', 'NVARCHAR(255)')}")
+            
+            if differences['modify_columns']:
+                click.echo("\n🔄 Columns to modify:")
+                for col_name, db_def, yaml_def in differences['modify_columns']:
+                    click.echo(f"   • {col_name}: {db_def['type']} → {yaml_def.get('type', 'NVARCHAR(255)')}")
+            
+            if differences['drop_columns']:
+                click.echo("\n➖ Columns to drop:")
+                for col_name in differences['drop_columns']:
+                    click.echo(f"   • {col_name}")
+            
+            # SQL команди
+            alter_commands = generator.generate_alter_commands(table_name, differences)
+            click.echo("\n💾 SQL Commands:")
+            for cmd in alter_commands:
+                click.echo(f"   {cmd}")
+            
+            return True
+            
+        except Exception as e:
+            click.echo(f"❌ Failed to compare: {e}")
+            return False
+        finally:
+            await cleanup_database()
+    
+    success = asyncio.run(show_diff())
     sys.exit(0 if success else 1)
 
 if __name__ == '__main__':

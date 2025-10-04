@@ -1,17 +1,17 @@
 # Основні таблиці системи
 version: "1.0.0"
-description: "Core system tables"
+description: "Users"
 
 tables:
   # Користувачі системи
   users:
-    parent: "entity"
+    parent: "catalog"
     columns:
-      username:
+      full_name:
         type: "NVARCHAR(50)"
         nullable: false
         unique: true
-        comment: "Логін користувача"
+        comment: "Повне ім'я користувача"
       email:
         type: "NVARCHAR(100)"
         nullable: false
@@ -21,14 +21,6 @@ tables:
         type: "NVARCHAR(255)"
         nullable: false
         comment: "Хеш пароля"
-      first_name:
-        type: "NVARCHAR(100)"
-        nullable: true
-        comment: "Ім'я"
-      last_name:
-        type: "NVARCHAR(100)"
-        nullable: true
-        comment: "Прізвище"
       phone:
         type: "NVARCHAR(20)"
         nullable: true
@@ -41,25 +33,14 @@ tables:
         type: "BIT"
         default: 0
         comment: "Адміністратор"
+      is_active:
+        type: "BIT"
+        nullable: false
+        default: 1
+        comment: "Активний користувач"
     indexes:
-      - name: "IX_users_username"
-        columns: ["username"]
-        unique: true
-      - name: "IX_users_email"
-        columns: ["email"]
-        unique: true
-
-  # Ролі користувачів
-  roles:
-    parent: "entity"
-    columns:
-      permissions:
-        type: "NTEXT"
-        nullable: true
-        comment: "JSON з дозволами"
-    indexes:
-      - name: "IX_roles_code"
-        columns: ["code"]
+      - name: "IX_users_full_name"
+        columns: ["full_name"]
         unique: true
 
   # Зв'язок користувачів і ролей
@@ -92,35 +73,3 @@ tables:
       - name: "IX_user_roles_user_role"
         columns: ["user_id", "role_id"]
         unique: true
-
-  # Системні налаштування
-  settings:
-    columns:
-      id:
-        type: "BIGINT"
-        primary_key: true
-        auto_increment: true
-      setting_key:
-        type: "NVARCHAR(100)"
-        nullable: false
-        unique: true
-        comment: "Ключ налаштування"
-      setting_value:
-        type: "NTEXT"
-        nullable: true
-        comment: "Значення (JSON)"
-      setting_type:
-        type: "NVARCHAR(20)"
-        nullable: false
-        default: "'string'"
-        comment: "Тип: string, number, boolean, json"
-      is_public:
-        type: "BIT"
-        default: 0
-        comment: "Доступне через API"
-      updated_at:
-        type: "DATETIME2"
-        default: "GETDATE()"
-      updated_by:
-        type: "BIGINT"
-        foreign_key: "users.id"

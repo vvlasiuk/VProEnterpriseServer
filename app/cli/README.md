@@ -7,14 +7,11 @@ python -m app.cli status
 # Показати схему
 python -m app.cli schema
 
-# Застосувати міграції
+# Застосувати міграції, Створити таблиці
 python -m app.cli migrate
 
 # Деталі конкретної таблиці
 python -m app.cli show-table users
-
-# Створити таблиці
-python -m app.cli migrate
 
 # Видалити зайві таблиці
 python -m app.cli drop-extra-tables
@@ -27,3 +24,15 @@ python -m app.cli drop-extra-tables --force
 
 # Повна синхронізація (очистити + створити)
 python -m app.cli clean-database --force && python -m app.cli migrate
+
+# Показати що буде змінено
+python -m app.cli migrate --dry-run --update-existing
+
+# Оновити існуючі таблиці
+python -m app.cli migrate --update-existing
+
+# Показати різниці для конкретної таблиці
+python -m app.cli diff-table users
+
+# Створити нові + оновити існуючі
+python -m app.cli migrate --update-existing

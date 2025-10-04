@@ -2,6 +2,8 @@ import logging
 from typing import List, Dict, Any, Optional
 from app.db.schema_manager import SchemaManager
 from app.services.database_service import DatabaseService
+from app.db.schema_comparator import SchemaComparator
+from app.db.alter_table_generator import AlterTableGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -116,3 +118,60 @@ class MigrationService:
             info["validation_errors"].append(f"Error getting DB info: {str(e)}")
         
         return info
+    
+    async def update_existing_tables(self, dry_run: bool = False) -> Dict[str, Any]:
+        """Оновити існуючі таблиці згідно схеми"""
+        results = {
+            "updated_tables": [],
+            "changes_planned": [],
+            "errors": []
+        }
+        
+        try:
+            self.schema_manager.load_all_schemas()
+            resolved_tables = self.schema_manager.get_all_tables()
+            
+            comparator = SchemaComparator()
+            generator = AlterTableGenerator()
+            
+            for table_name, yaml_structure in resolved_tables.items():
+                try:
+                    # Перевірити чи таблиця існує
+                    if not await self._table_exists(table_name):
+                        continue
+                    
+                    # Отримати структуру з БД
+                    db_structure = await comparator.get_table_structure(table_name)
+                    
+                    # Порівняти структури
+                    differences = comparator.compare_table_structures(db_structure, yaml_structure)
+                    
+                    # Якщо є різниці
+                    if any(differences.values()):
+                        # Згенерувати команди
+                        alter_commands = generator.generate_alter_commands(table_name, differences)
+                        
+                        if dry_run:
+                            results["changes_planned"].append({
+                                "table": table_name,
+                                "commands": alter_commands,
+                                "differences": differences
+                            })
+                        else:
+                            # Виконати команди
+                            for cmd in alter_commands:
+                                await DatabaseService.execute_non_query(cmd)
+                                logger.info(f"Executed: {cmd}")
+                            
+                            results["updated_tables"].append(table_name)
+                
+                except Exception as e:
+                    error_msg = f"Failed to update table {table_name}: {str(e)}"
+                    logger.error(error_msg)
+                    results["errors"].append(error_msg)
+        
+        except Exception as e:
+            logger.error(f"Update tables failed: {e}")
+            results["errors"].append(f"General error: {str(e)}")
+        
+        return results

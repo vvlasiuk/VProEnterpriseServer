@@ -14,6 +14,7 @@ from app.services.database_service import DatabaseService
 from app.db.schema_comparator import SchemaComparator        # Додати цей рядок
 from app.db.alter_table_generator import AlterTableGenerator # Додати цей рядок
 from app.core.config import settings
+from app.services.seed_data_service import SeedDataService   # Імпортуємо SeedDataService
 import logging
 
 # Налаштування логування для CLI
@@ -472,6 +473,64 @@ def diff_table(table_name):
             await cleanup_database()
     
     success = asyncio.run(show_diff())
+    sys.exit(0 if success else 1)
+
+@db.command()
+def seed():
+    """Заповнити БД початковими даними"""
+    
+    async def run_seeding():
+        if not await init_database():
+            return False
+        
+        try:
+            seed_service = SeedDataService()
+            results = await seed_service.seed_all_data()
+            
+            if results["seeded_tables"]:
+                click.echo("✅ Seeded tables:")
+                for table in results["seeded_tables"]:
+                    click.echo(f"   • {table}")
+            
+            if results["skipped_tables"]:
+                click.echo("⏭️  Skipped tables:")
+                for table in results["skipped_tables"]:
+                    click.echo(f"   • {table}")
+            
+            if results["errors"]:
+                click.echo("❌ Errors:")
+                for error in results["errors"]:
+                    click.echo(f"   • {error}")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            click.echo(f"❌ Seeding failed: {e}")
+            return False
+        finally:
+            await cleanup_database()
+    
+    success = asyncio.run(run_seeding())
+    sys.exit(0 if success else 1)
+
+@db.command()
+def migrate_and_seed():
+    """Міграція + заповнення даними"""
+    
+    async def run_full_setup():
+        # Спочатку міграція
+        migration_service = MigrationService()
+        migration_results = await migration_service.create_all_tables()
+        
+        # Потім seeding
+        seed_service = SeedDataService()
+        seed_results = await seed_service.seed_all_data()
+        
+        return migration_results, seed_results
+    
+    # Виконати повний setup
+    success = asyncio.run(run_full_setup())
     sys.exit(0 if success else 1)
 
 if __name__ == '__main__':

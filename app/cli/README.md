@@ -36,3 +36,12 @@ python -m app.cli diff-table users
 
 # Створити нові + оновити існуючі
 python -m app.cli migrate --update-existing
+
+# Тільки заповнення даними
+python -m app.cli seed
+
+# Міграція + заповнення
+python -m app.cli migrate-and-seed
+
+# Повна синхронізація
+python -m app.cli clean-database --force && python -m app.cli migrate-and-seed

@@ -1,3 +1,12 @@
+<!-- Порядок оновлення -->
+# створити таблиці
+python -m app.cli migrate 
+# видалити таблиці
+python -m app.cli drop-extra-tables
+# оновити колонки
+python -m app.cli migrate --update-existing
+<!-- Порядок оновлення -->
+
 # Показати доступні команди
 python -m app.cli --help
 

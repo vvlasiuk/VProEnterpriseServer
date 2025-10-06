@@ -1,0 +1,29 @@
+# Єдиний довідник товарів, матеріалів, послуг
+version: "1.0.0"
+description: "Universal items catalog - товари, матеріали, послуги, сировина, тара"
+
+tables:
+  # Основна таблиця номенклатури
+  products:
+    parent: "catalog"
+    columns:
+      # Основні характеристики
+      products_type_id:
+        type: "BIGINT"
+        nullable: true
+        foreign_key: "products_type.id"
+        comment: "Тип продукції"
+      category_id:
+        type: "BIGINT"
+        nullable: true
+        foreign_key: "categories.id"
+        comment: "Категорія товару"
+      brand_id:
+        type: "BIGINT"
+        nullable: true
+        foreign_key: "brands.id"
+        comment: "Торгова марка"
+      article_number:
+        type: "NVARCHAR(50)"
+        nullable: true
+        comment: "Артикул"

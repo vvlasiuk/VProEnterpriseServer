@@ -6,6 +6,7 @@ parent_tables:
       type: "BIGINT"
       primary_key: true
       auto_increment: true
+      nullable: false 
     name:
       type: "NVARCHAR(255)"
       nullable: false

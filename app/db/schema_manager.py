@@ -162,6 +162,10 @@ class SchemaManager:
         """Генерує SQL визначення колонки"""
         column_type = column_def.get('type', 'NVARCHAR(255)')
         
+        # IDENTITY для auto_increment
+        if column_def.get('auto_increment', False):
+            column_type += " IDENTITY(1,1)"
+        
         # Primary key колонки завжди NOT NULL
         if column_def.get('primary_key', False):
             nullable = False
@@ -169,13 +173,10 @@ class SchemaManager:
             nullable = column_def.get('nullable', True)
         
         # NULL/NOT NULL
-        if nullable is False:
-            null_sql = "NOT NULL"
-        else:
-            null_sql = "NULL"
+        null_sql = "NOT NULL" if not nullable else "NULL"
         
-        # DEFAULT value
-        if 'default' in column_def:
+        # DEFAULT value (не для IDENTITY колонок)
+        if 'default' in column_def and not column_def.get('auto_increment', False):
             default_val = column_def['default']
             default_sql = f"DEFAULT {default_val}"
         else:

@@ -4,27 +4,12 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from app.core.config import settings
+from app.services.database_service import DatabaseService
 
 # Використовуйте налаштування з config
 SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = settings.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-
-# Заглушка користувачів
-FAKE_USERS_DB = {
-    "admin": {
-        "username": "admin",
-        "password": "admin123",  # В продакшн - хешовані паролі!
-        "role": "admin",
-        "active": True
-    },
-    "user": {
-        "username": "user",
-        "password": "user123",
-        "role": "user", 
-        "active": True
-    }
-}
 
 security = HTTPBearer()
 
@@ -58,26 +43,70 @@ def verify_token(token: str) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
-    """Перевірка користувача (заглушка)"""
-    user = FAKE_USERS_DB.get(username)
-    if user and user["password"] == password and user["active"]:
-        return user
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Перевірити пароль"""
+    try:
+        import bcrypt
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ImportError:
+        # Fallback на простий хеш якщо bcrypt не встановлений
+        import hashlib
+        return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+
+def hash_password(password: str) -> str:
+    """Захешувати пароль"""
+    try:
+        import bcrypt
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed.decode('utf-8')
+    except ImportError:
+        # Fallback на простий хеш якщо bcrypt не встановлений
+        import hashlib
+        return hashlib.sha256(password.encode()).hexdigest()
+
+# Замінити authenticate_user на БД
+async def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
+    """Перевірка користувача з бази даних"""
+    query = """
+    SELECT id, name, full_name, email, password_hash, is_admin, is_active
+    FROM users 
+    WHERE (name = ? OR email = ?) AND is_active = 1
+    """
+    
+    users = await DatabaseService.execute_query(query, (username, username))
+    
+    if not users:
+        return None
+    
+    user = users[0]
+    # Перевірити пароль (bcrypt)
+    if verify_password(password, user["password_hash"]):
+        return {
+            "id": user["id"],
+            "name": user["name"],           # Додати name
+            "username": user["name"],       # Залишити username для сумісності
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "is_admin": user["is_admin"],
+            "role": "admin" if user["is_admin"] else "user"
+        }
     return None
 
 # ВИПРАВЛЕНА ФУНКЦІЯ
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Отримання поточного користувача з токену"""
-    token = credentials.credentials  # Правильний доступ до токену
+    """Отримання поточного користувача з БД"""
+    token = credentials.credentials
     payload = verify_token(token)
-    username = payload.get("sub")
-    user = FAKE_USERS_DB.get(username)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
-    return user
+    user_id = payload.get("user_id")
+    
+    query = "SELECT * FROM users WHERE id = ? AND is_active = 1"
+    users = await DatabaseService.execute_query(query, (user_id,))
+    
+    if not users:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    return users[0]
 
 def require_admin_role(current_user: Dict = None):
     """Перевірка ролі адміністратора"""

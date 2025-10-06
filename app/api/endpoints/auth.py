@@ -23,7 +23,7 @@ async def login(credentials: Dict[str, str]):
             detail="Username and password required"
         )
     
-    user = authenticate_user(username, password)
+    user = await authenticate_user(username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -32,16 +32,26 @@ async def login(credentials: Dict[str, str]):
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user["username"], "role": user["role"]}, 
+        data={
+            "sub": user["name"],
+            "user_id": user["id"],
+            "email": user["email"],
+            "is_admin": user["is_admin"],
+            "role": user["role"]
+        }, 
         expires_delta=access_token_expires
     )
     
     return {
         "access_token": access_token,
-        "token_type": "bearer",
+        "token_type": "bearer", 
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "user": {
-            "username": user["username"],
+            "id": user["id"],
+            "name": user["name"],
+            "full_name": user["full_name"],
+            "email": user["email"],
+            "is_admin": user["is_admin"],
             "role": user["role"]
         }
     }

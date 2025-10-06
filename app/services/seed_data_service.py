@@ -1,3 +1,9 @@
+from __future__ import annotations  # Для підтримки нових типів
+import logging
+from typing import Dict, Any, List, Optional
+from app.services.database_service import DatabaseService
+import hashlib
+
 # app/services/seed_data_service.py
 class SeedDataService:
     """Сервіс для заповнення початковими даними"""
@@ -15,9 +21,9 @@ class SeedDataService:
             await self.seed_users()
             results["seeded_tables"].append("users")
             
-            # Заповнити ролі
-            await self.seed_roles()
-            results["seeded_tables"].append("roles")
+            # # Заповнити ролі
+            # await self.seed_roles()
+            # results["seeded_tables"].append("roles")
             
             # # Заповнити налаштування
             # await self.seed_settings()
@@ -50,3 +56,32 @@ class SeedDataService:
             
             await self._insert_user(admin_data)
             logger.info("Created default administrator")
+    
+    def _hash_password(self, password: str) -> str:
+        """Захешувати пароль використовуючи bcrypt"""
+        try:
+            import bcrypt
+            salt = bcrypt.gensalt()
+            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            return hashed.decode('utf-8')
+        except ImportError:
+            # Fallback на простий хеш якщо bcrypt не встановлений
+            import hashlib
+            return hashlib.sha256(password.encode()).hexdigest()
+    
+    async def _insert_user(self, user_data: dict):
+        """Вставити користувача в БД"""
+        query = """
+        INSERT INTO users (name, code, full_name, email, password_hash, is_active, is_admin, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())
+        """
+        
+        await DatabaseService.execute_non_query(query, (
+            user_data["name"],
+            user_data["code"], 
+            user_data["full_name"],
+            user_data["email"],
+            user_data["password_hash"],
+            user_data["is_active"],
+            user_data["is_admin"]
+        ))

@@ -1,0 +1,9 @@
+# Категорії товарів - мінімальна версія
+version: "1.0.0"
+description: "Product categories - категорії товарів"
+
+tables:
+  # Категорії товарів
+  cat_products_categories:
+    parent: "catalog"
+    # columns:

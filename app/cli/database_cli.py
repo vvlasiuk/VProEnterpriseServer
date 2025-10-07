@@ -533,5 +533,40 @@ def migrate_and_seed():
     success = asyncio.run(run_full_setup())
     sys.exit(0 if success else 1)
 
+@db.command()
+def cleanup_rls():
+    """Очистити всі RLS політики перед видаленням таблиць"""
+    
+    async def cleanup_security():
+        # ДОДАТИ: Ініціалізація БД
+        if not await init_database():
+            return False
+            
+        try:
+            # Список команд для очищення RLS
+            cleanup_commands = [
+                "DROP SECURITY POLICY IF EXISTS Security.UserAccessPolicy",
+                # "ALTER TABLE users DISABLE ROW LEVEL SECURITY", 
+                "DROP FUNCTION IF EXISTS Security.fn_userAccess",
+                "DROP SCHEMA IF EXISTS Security"
+            ]
+            
+            for cmd in cleanup_commands:
+                try:
+                    await DatabaseService.execute_non_query(cmd)
+                    click.echo(f"✅ Executed: {cmd}")
+                except Exception as e:
+                    click.echo(f"⚠️  Skipped: {cmd} - {e}")
+            
+            click.echo("✅ RLS cleanup completed")
+            
+        except Exception as e:
+            click.echo(f"❌ RLS cleanup failed: {e}")
+        finally:
+            # ДОДАТИ: Закрити з'єднання
+            await cleanup_database()
+    
+    asyncio.run(cleanup_security())
+
 if __name__ == '__main__':
     db()

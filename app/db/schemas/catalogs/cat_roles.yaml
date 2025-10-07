@@ -4,14 +4,10 @@ description: "Core system tables"
 
 tables:
   # Ролі користувачів
-  roles:
+  cat_roles:
     parent: "catalog"
     columns:
       permissions:
         type: "NTEXT"
         nullable: true
         comment: "JSON з дозволами"
-    indexes:
-      - name: "IX_roles_code"
-        columns: ["code"]
-        unique: true

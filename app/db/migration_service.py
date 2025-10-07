@@ -14,7 +14,7 @@ class MigrationService:
         self.schema_manager = SchemaManager()
         
     async def create_all_tables(self) -> Dict[str, Any]:
-        """Створити всі таблиці згідно схеми"""
+        """Створити всі таблиці згідно схеми в транзакції"""
         results = {
             "created_tables": [],
             "errors": [],
@@ -29,39 +29,46 @@ class MigrationService:
             creation_order = self.schema_manager.get_table_creation_order()
             resolved_tables = self.schema_manager.get_all_tables()
             
-            for table_name in creation_order:
-                try:
-                    # Перевіряємо чи таблиця вже існує
-                    exists = await self._table_exists(table_name)
-                    if exists:
-                        results["skipped_tables"].append(f"{table_name} (already exists)")
-                        continue
+            # Виконуємо в одній транзакції
+            async with DatabaseService.get_transaction() as cursor:
+                for table_name in creation_order:
+                    try:
+                        # Перевіряємо чи таблиця вже існує
+                        exists = await self._table_exists_in_transaction(cursor, table_name)
+                        if exists:
+                            results["skipped_tables"].append(f"{table_name} (already exists)")
+                            continue
+                        
+                        # Генеруємо SQL
+                        table_def = resolved_tables[table_name]
+                        create_sql = self.schema_manager.generate_create_table_sql(table_name, table_def)
+                        
+                        # Виконуємо CREATE TABLE в транзакції
+                        await cursor.execute(create_sql)
+                        logger.info(f"Created table: {table_name}")
+                        results["created_tables"].append(table_name)
+                        
+                        # Створюємо індекси в тій же транзакції
+                        indexes = table_def.get('indexes', [])
+                        if indexes:
+                            index_sqls = self.schema_manager.generate_indexes_sql(table_name, indexes)
+                            for index_sql in index_sqls:
+                                await cursor.execute(index_sql)
+                            logger.info(f"Created {len(index_sqls)} indexes for {table_name}")
                     
-                    # Генеруємо SQL
-                    table_def = resolved_tables[table_name]
-                    create_sql = self.schema_manager.generate_create_table_sql(table_name, table_def)
-                    
-                    # Виконуємо CREATE TABLE
-                    await DatabaseService.execute_non_query(create_sql)
-                    logger.info(f"Created table: {table_name}")
-                    results["created_tables"].append(table_name)
-                    
-                    # Створюємо індекси
-                    indexes = table_def.get('indexes', [])
-                    if indexes:
-                        index_sqls = self.schema_manager.generate_indexes_sql(table_name, indexes)
-                        for index_sql in index_sqls:
-                            await DatabaseService.execute_non_query(index_sql)
-                        logger.info(f"Created {len(index_sqls)} indexes for {table_name}")
-                    
-                except Exception as e:
-                    error_msg = f"Failed to create table {table_name}: {str(e)}"
-                    logger.error(error_msg)
-                    results["errors"].append(error_msg)
+                    except Exception as e:
+                        # При помилці транзакція автоматично відкатиться
+                        error_msg = f"Failed to create table {table_name}: {str(e)}"
+                        logger.error(error_msg)
+                        results["errors"].append(error_msg)
+                        # Виходимо з циклу при помилці
+                        raise
+            
+            logger.info("All tables created successfully in transaction")
             
         except Exception as e:
-            logger.error(f"Migration failed: {e}")
-            results["errors"].append(f"General error: {str(e)}")
+            logger.error(f"Migration transaction failed: {e}")
+            results["errors"].append(f"Transaction error: {str(e)}")
         
         return results
     
@@ -74,6 +81,17 @@ class MigrationService:
         """
         result = await DatabaseService.execute_scalar(query, (table_name,))
         return result > 0
+    
+    async def _table_exists_in_transaction(self, cursor, table_name: str) -> bool:
+        """Перевірити чи існує таблиця в рамках транзакції"""
+        query = """
+        SELECT COUNT(*) 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE LOWER(TABLE_NAME) = LOWER(?) AND TABLE_TYPE = 'BASE TABLE'
+        """
+        await cursor.execute(query, (table_name,))
+        result = await cursor.fetchone()
+        return result[0] > 0
     
     async def get_database_info(self) -> Dict[str, Any]:
         """Отримати інформацію про поточну БД"""

@@ -40,3 +40,16 @@ class DatabaseService:
                 columns = [desc[0] for desc in cursor.description] if cursor.description else []
                 rows = await cursor.fetchall()
                 return [dict(zip(columns, row)) for row in rows]
+    
+    @staticmethod
+    def get_transaction():
+        """Отримати транзакцію для виконання множинних операцій"""
+        return db_manager.get_transaction()
+
+    @staticmethod 
+    async def execute_in_transaction(queries_with_params):
+        """Виконати список запитів в одній транзакції"""
+        async with db_manager.get_transaction() as cursor:
+            for query, params in queries_with_params:
+                await cursor.execute(query, params or ())
+            return cursor.rowcount

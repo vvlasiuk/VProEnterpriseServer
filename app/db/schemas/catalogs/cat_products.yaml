@@ -4,24 +4,24 @@ description: "Universal items catalog - товари, матеріали, пос
 
 tables:
   # Основна таблиця номенклатури
-  products:
+  cat_products:
     parent: "catalog"
     columns:
       # Основні характеристики
       products_type_id:
         type: "BIGINT"
         nullable: true
-        foreign_key: "products_type.id"
+        foreign_key: "cat_products_type.id"
         comment: "Тип продукції"
       category_id:
         type: "BIGINT"
         nullable: true
-        foreign_key: "categories.id"
+        foreign_key: "cat_products_categories.id"
         comment: "Категорія товару"
       brand_id:
         type: "BIGINT"
         nullable: true
-        foreign_key: "brands.id"
+        foreign_key: "cat_products_brands.id"
         comment: "Торгова марка"
       article_number:
         type: "NVARCHAR(50)"

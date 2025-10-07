@@ -1,8 +1,22 @@
+<!-- Видалення -->
+# 1. Очистити RLS політики
+python -m app.cli cleanup-rls
+
+# Очистити всю БД (НЕБЕЗПЕЧНО!)
+python -m app.cli clean-database
+<!--  Видалення-->
+
+<!-- Створення -->
+# створити таблиці
+python -m app.cli migrate 
+
+# Тільки заповнення даними
+python -m app.cli seed
+<!-- Створення -->
+
 <!-- Порядок оновлення -->
 # створити таблиці
 python -m app.cli migrate 
-# видалити таблиці
-python -m app.cli drop-extra-tables
 # оновити колонки
 python -m app.cli migrate --update-existing
 <!-- Порядок оновлення -->

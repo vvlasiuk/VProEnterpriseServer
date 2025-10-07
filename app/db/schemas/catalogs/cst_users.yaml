@@ -4,7 +4,7 @@ description: "Users"
 
 tables:
   # Користувачі системи
-  users:
+  cat_users:
     parent: "catalog"
     columns:
       full_name:
@@ -44,7 +44,7 @@ tables:
         unique: true
 
   # Зв'язок користувачів і ролей
-  user_roles:
+  cat_user_roles:
     columns:
       id:
         type: "BIGINT"
@@ -53,12 +53,12 @@ tables:
       user_id:
         type: "BIGINT"
         nullable: false
-        foreign_key: "users.id"
+        foreign_key: "cat_users.id"
         comment: "Користувач"
       role_id:
         type: "BIGINT"
         nullable: false
-        foreign_key: "roles.id"
+        foreign_key: "cat_roles.id"
         comment: "Роль"
       assigned_at:
         type: "DATETIME2"

@@ -29,6 +29,10 @@ class SeedDataService:
             # await self.seed_settings()
             # results["seeded_tables"].append("settings")
             
+            # Заповнити типи продукції
+            await self.seed_product_types()
+            results["seeded_tables"].append("product_types")
+            
         except Exception as e:
             results["errors"].append(str(e))
         
@@ -37,14 +41,13 @@ class SeedDataService:
     async def seed_users(self):
         """Створити адміністратора якщо немає користувачів"""
         # Перевірити чи є користувачі
-        count_query = "SELECT COUNT(*) FROM users"
+        count_query = "SELECT COUNT(*) FROM cat_users"
         user_count = await DatabaseService.execute_scalar(count_query)
         
         if user_count == 0:
             # Створити адміністратора
             admin_data = {
                 "name": "Administrator",
-                "code": "admin",
                 "full_name": "System Administrator",
                 "email": "",
                 "password_hash": self._hash_password("admin"),
@@ -55,7 +58,7 @@ class SeedDataService:
             }
             
             await self._insert_user(admin_data)
-            logger.info("Created default administrator")
+            # logger.info("Created default administrator")
     
     def _hash_password(self, password: str) -> str:
         """Захешувати пароль використовуючи bcrypt"""
@@ -72,16 +75,68 @@ class SeedDataService:
     async def _insert_user(self, user_data: dict):
         """Вставити користувача в БД"""
         query = """
-        INSERT INTO users (name, code, full_name, email, password_hash, is_active, is_admin, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())
+        INSERT INTO cat_users (name, full_name, email, password_hash, is_active, is_admin, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, GETDATE())
         """
         
         await DatabaseService.execute_non_query(query, (
             user_data["name"],
-            user_data["code"], 
+            # user_data["code"], 
             user_data["full_name"],
             user_data["email"],
             user_data["password_hash"],
             user_data["is_active"],
             user_data["is_admin"]
+        ))
+    
+    async def seed_product_types(self):
+        """Заповнити типи продукції базовими значеннями"""
+        # Перевірити чи є типи
+        count_query = "SELECT COUNT(*) FROM cat_products_type"
+        types_count = await DatabaseService.execute_scalar(count_query)
+        
+        if types_count == 0:
+            # Базові типи продукції
+            product_types = [
+                {
+                    "name": "Товари",
+                    "type_code": "GOODS", 
+                    "created_by": 1
+                },
+                {
+                    "name": "Матеріали", 
+                    "type_code": "MATERIALS",
+                    "created_by": 1
+                },
+                {
+                    "name": "Послуги",
+                    "type_code": "SERVICES", 
+                    "created_by": 1
+                },
+                {
+                    "name": "Сировина",
+                    "type_code": "RAW",
+                    "created_by": 1
+                },
+                {
+                    "name": "Тара",
+                    "type_code": "PACKAGING",
+                    "created_by": 1
+                }
+            ]
+            
+            for product_type in product_types:
+                await self._insert_product_type(product_type)
+    
+    async def _insert_product_type(self, product_type_data: dict):
+        """Вставити тип продукції в БД"""
+        query = """
+        INSERT INTO cat_products_type (name, type_code, created_by, created_at)
+        VALUES (?, ?, ?, GETDATE())
+        """
+        
+        await DatabaseService.execute_non_query(query, (
+            product_type_data["name"],
+            product_type_data["type_code"], 
+            product_type_data["created_by"]
         ))

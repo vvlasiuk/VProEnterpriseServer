@@ -1,0 +1,33 @@
+# Типи товарів/продукції - базова версія
+version: "1.0.0"
+description: "Product types classification - базова класифікація типів товарів"
+
+tables:
+  # Типи товарів
+  cat_products_type:
+    parent: "catalog"
+    columns:
+      # Основна класифікація
+      type_code:
+        type: "NVARCHAR(20)"
+        nullable: false
+        unique: true
+        comment: "Код типу (GOODS, MATERIALS, SERVICES, RAW, PACKAGING)"
+      
+      # Базові характеристики
+      # requires_inventory:
+      #   type: "BIT"
+      #   nullable: false
+      #   default: 1
+      #   comment: "Потребує складського обліку"
+      
+      # is_physical:
+      #   type: "BIT"
+      #   nullable: false
+      #   default: 1
+      #   comment: "Фізичний товар (не послуга)"
+      
+    # indexes:
+    #   - name: "IX_products_type_code"
+    #     columns: ["type_code"]
+    #     unique: true

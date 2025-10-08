@@ -1,0 +1,19 @@
+# Зовнішні джерела даних
+version: "1.0.0"
+description: "Зовнішні джерела даних"
+
+tables:
+  cat_external_data_sources:
+    parent: "catalog"  # Успадковує id, name, created_at, created_by
+    columns:     
+      is_active:
+        type: "BIT"
+        nullable: false
+        default: 1
+        comment: "Активне джерело"
+      
+      last_sync_at:
+        type: "DATETIME2"
+        nullable: true
+        comment: "Остання синхронізація"
+    

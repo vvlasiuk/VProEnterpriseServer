@@ -67,7 +67,7 @@ tables:
       assigned_by:
         type: "BIGINT"
         nullable: false
-        foreign_key: "users.id"
+        foreign_key: "cat_users.id"
         comment: "Хто призначив"
     indexes:
       - name: "IX_user_roles_user_role"

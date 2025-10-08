@@ -31,5 +31,10 @@ parent_tables:
     created_by:
       type: "BIGINT"
       foreign_key: "cat_users.id"
+    mark_deleted:
+      type: "BIT"
+      nullable: false
+      default: 0
+      comment: "Помітка на вилучення"
 
 

@@ -1,0 +1,42 @@
+version: "1.0.0"
+description: "External ID mapping - зв'язок зовнішніх ідентифікаторів"
+
+tables:
+  cat_external_data_mapping:
+    columns:
+      id:
+        type: "BIGINT"
+        primary_key: true
+        auto_increment: true
+        nullable: false
+      
+      # Джерело даних
+      source_id:
+        type: "BIGINT"
+        nullable: false
+        foreign_key: "cat_external_data_sources.id"
+        comment: "Джерело даних"
+      
+      # Цільова таблиця
+      target_table:
+        type: "NVARCHAR(50)"
+        nullable: false
+        comment: "Назва таблиці (cat_products, cat_users)"
+      
+      # Зовнішній ідентифікатор
+      external_id:
+        type: "NVARCHAR(50)"
+        nullable: false
+        comment: "Зовнішній ID/артикул/код"
+      
+      # Внутрішній ідентифікатор
+      internal_id:
+        type: "BIGINT"
+        nullable: false
+        comment: "ID запису в нашій БД"
+      
+      # Дата створення
+      created_at:
+        type: "DATETIME2"
+        default: "GETDATE()"
+        comment: "Дата створення зв'язку"

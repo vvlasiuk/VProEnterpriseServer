@@ -1,11 +1,11 @@
 # Основні таблиці системи
 version: "1.0.0"
-description: "Users"
 
 tables:
   # Користувачі системи
   cat_users:
     parent: "catalog"
+    description: "Users"
     columns:
       full_name:
         type: "NVARCHAR(50)"
@@ -45,6 +45,7 @@ tables:
 
   # Зв'язок користувачів і ролей
   cat_user_roles:
+    description: "user_roles"
     columns:
       id:
         type: "BIGINT"

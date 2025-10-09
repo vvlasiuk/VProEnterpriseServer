@@ -1,9 +1,9 @@
 # Бренди товарів - мінімальна версія
 version: "1.0.0"
-description: "Product brands - бренди товарів"
 
 tables:
   # Бренди товарів
   cat_products_brands:
     parent: "catalog"
+    description: "Product brands"
     # columns:

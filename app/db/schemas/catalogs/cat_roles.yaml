@@ -1,11 +1,11 @@
 # Основні таблиці системи
 version: "1.0.0"
-description: "Core system tables"
 
 tables:
   # Ролі користувачів
   cat_roles:
     parent: "catalog"
+    description: "Roles"
     columns:
       permissions:
         type: "NTEXT"

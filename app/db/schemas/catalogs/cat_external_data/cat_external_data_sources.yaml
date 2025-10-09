@@ -1,9 +1,9 @@
 # Зовнішні джерела даних
 version: "1.0.0"
-description: "Зовнішні джерела даних"
 
 tables:
   cat_external_data_sources:
+    description: "Зовнішні джерела даних"
     parent: "catalog"  # Успадковує id, name, created_at, created_by
     columns:     
       is_active:

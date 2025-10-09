@@ -1,11 +1,11 @@
 # Типи товарів/продукції - базова версія
 version: "1.0.0"
-description: "Product types classification - базова класифікація типів товарів"
 
 tables:
   # Типи товарів
   cat_products_type:
     parent: "catalog"
+    description: "Product types"
     columns:
       # Основна класифікація
       type_code:

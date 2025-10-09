@@ -1,11 +1,11 @@
 # Єдиний довідник товарів, матеріалів, послуг
 version: "1.0.0"
-description: "Universal items catalog - товари, матеріали, послуги, сировина, тара"
 
 tables:
   # Основна таблиця номенклатури
   cat_products:
     parent: "catalog"
+    description: "Products and goods"
     columns:
       # Основні характеристики
       products_type_id:

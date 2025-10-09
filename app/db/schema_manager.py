@@ -11,7 +11,7 @@ class SchemaManager:
     """Менеджер для роботи зі схемами бази даних"""
     
     def __init__(self):
-        self.schemas_dir = settings.DB_SCHEMAS_DIR
+        self.schemas_dir = Path(settings.DB_SCHEMAS_DIR)  # Перетворити в Path
         self.parent_tables = {}
         self.tables = {}
         self.core_schema: Dict = {}
@@ -247,13 +247,25 @@ class SchemaManager:
         return self.resolved_tables
     
     def get_table_creation_order(self) -> List[str]:
-        """Отримати порядок створення таблиць (топологічне сортування)"""
+        """Get table creation order (topological sorting with sys_data_types first)"""
         dependencies = self.get_table_dependencies()
         ordered = []
         remaining = set(self.resolved_tables.keys())
         
+        # Always create sys_data_types first if it exists
+        if 'sys_data_types' in remaining:
+            ordered.append('sys_data_types')
+            remaining.remove('sys_data_types')
+        
+        # Then create other system tables
+        system_tables = [t for t in remaining if t.startswith('sys_')]
+        if system_tables:
+            ordered.extend(sorted(system_tables))
+            remaining -= set(system_tables)
+        
+        # Then use regular dependency resolution for business tables
         while remaining:
-            # Знайдемо таблиці без залежностей
+            # Find tables without dependencies
             no_deps = []
             for table in remaining:
                 table_deps = [dep for dep in dependencies.get(table, []) if dep in remaining]
@@ -261,7 +273,7 @@ class SchemaManager:
                     no_deps.append(table)
             
             if not no_deps:
-                # Циклічні залежності - додаємо що залишилося
+                # Circular dependencies - add remaining
                 no_deps = list(remaining)
                 logger.warning("Possible circular dependencies detected")
             
@@ -270,18 +282,18 @@ class SchemaManager:
         
         return ordered
     
-    def discover_schema_files(self) -> Dict[str, List[str]]:
-        """Автоматично знайти всі схеми по підпапках"""
+    def discover_schema_files(self) -> Dict[str, List[Path]]:
+        """Discover all schema files in subdirectories (including nested)"""
         schema_files = {}
         
-        base_path = Path(self.schemas_dir)
-        
-        # Сканувати всі підпапки
-        for subfolder in base_path.iterdir():
-            if subfolder.is_dir():
-                folder_name = subfolder.name
-                yaml_files = list(subfolder.glob("*.yaml"))
-                schema_files[folder_name] = [str(f) for f in yaml_files]
+        for category_path in self.schemas_dir.iterdir():
+            if category_path.is_dir():
+                category_name = category_path.name
+                schema_files[category_name] = []
+                
+                # Рекурсивний пошук в підпапках
+                for schema_file in category_path.glob("**/*.yaml"):
+                    schema_files[category_name].append(schema_file)
         
         return schema_files
     
@@ -365,3 +377,38 @@ class SchemaManager:
         """Генерує SQL команду для видалення колонки"""
         drop_column_sql = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
         return drop_column_sql
+    
+    def get_schema_info_for_table(self, table_name: str) -> Dict[str, Any]:
+        """Get schema information for specific table including description"""
+        
+        # Search through loaded schema files to find table definition
+        schema_files = self.discover_schema_files()
+        
+        for category in schema_files:
+            if category == 'parents':
+                continue
+            
+            for schema_file in schema_files[category]:
+                try:
+                    with open(schema_file, 'r', encoding='utf-8') as file:
+                        data = yaml.safe_load(file)
+                        
+                        # Check if this file contains our table
+                        tables = data.get('tables', {})
+                        if table_name in tables:
+                            return {
+                                'description': data.get('description', ''),
+                                'version': data.get('version', '1.0.0'),
+                                'table_definition': tables[table_name]
+                            }
+                except Exception as e:
+                    logger.warning(f"Could not read schema file {schema_file}: {e}")
+                    continue
+        
+        # If not found, return empty info
+        logger.warning(f"Schema info not found for table: {table_name}")
+        return {
+            'description': '',
+            'version': '1.0.0',
+            'table_definition': {}
+        }

@@ -1,0 +1,50 @@
+# Системні типи даних
+version: "1.0.0"
+
+tables:
+  sys_data_types:
+    description: "System data types"
+    columns:
+      # Первинний ключ
+      id:
+        type: "BIGINT"
+        primary_key: true
+        auto_increment: true
+        nullable: false
+      
+      # Назва типу
+      type_name:
+        type: "NVARCHAR(100)"
+        nullable: false
+        comment: "Назва типу даних"
+      
+      # Фізична таблиця
+      table_name:
+        type: "NVARCHAR(50)"
+        nullable: false
+        comment: "Назва таблиці в БД (cat_products, cat_users)"
+      
+      # Налаштування
+      is_active:
+        type: "BIT"
+        nullable: false
+        default: 1
+        comment: "Активний тип"
+      
+      supports_mapping:
+        type: "BIT"
+        nullable: false
+        default: 1
+        comment: "Підтримує зовнішнє маппінг"
+      
+      # Аудит
+      created_at:
+        type: "DATETIME2"
+        default: "GETDATE()"
+        comment: "Дата створення"
+      
+    indexes:
+      - name: "IX_data_types_table"
+        columns: ["table_name"]
+      - name: "IX_data_types_active" 
+        columns: ["is_active"]

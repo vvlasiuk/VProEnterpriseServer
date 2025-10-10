@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     # DB_PARENT_CORE_SCHEMA: str = "app/db/schemas/parent_core_db_schema.yaml"
     # DB_CORE_SCHEMA: str = "app/db/schemas/core_db_schema.yaml"
     DB_SCHEMAS_DIR: str = "app/db/schemas"
+    DB_ENUMERATIONS_DIR: str = "app/db/enumerations_schemas"
     DB_PLUGINS_DIR: str = "plugins"
 
     ENABLED_PLUGINS: list = []

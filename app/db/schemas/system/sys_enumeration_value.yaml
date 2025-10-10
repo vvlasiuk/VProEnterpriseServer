@@ -1,0 +1,43 @@
+tables:
+  sys_enumeration_value:
+    description: "System enumeration values"
+    columns:
+      # Primary key
+      id:
+        type: "BIGINT"
+        primary_key: true
+        auto_increment: true
+        nullable: false
+      
+      # Foreign key to enumeration type
+      enumeration_type_id:
+        type: "BIGINT"
+        nullable: false
+        foreign_key: "sys_enumeration_type.id"
+        comment: "Enumeration type reference"
+      
+      # Value code
+      value_code:
+        type: "NVARCHAR(150)"
+        nullable: false
+        comment: "Value code (VAT_20, CASH, USD)"
+      
+      # Value name
+      value_name:
+        type: "NVARCHAR(100)"
+        nullable: false
+        comment: "Value display name"
+      
+      # Numeric value for calculations
+      numeric_value:
+        type: "DECIMAL(15,4)"
+        nullable: true
+        comment: "Numeric value for rates, amounts"
+      
+      # Sort order
+      sort_order:
+        type: "INT"
+        nullable: false
+        default: 0
+        comment: "Display sort order"
+      

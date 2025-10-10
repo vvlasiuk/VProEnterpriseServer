@@ -1,0 +1,25 @@
+# VAT rates enumeration
+
+enu_vat_rates:
+  description: "VAT rates for tax calculations"
+  type_code: "VAT_RATES"
+  values:
+    - value_code: "VAT_20"
+      value_name: "20%"
+      numeric_value: 20.0000
+      sort_order: 1
+      
+    - value_code: "VAT_7"
+      value_name: "7%"
+      numeric_value: 7.0000
+      sort_order: 2
+      
+    - value_code: "VAT_0"
+      value_name: "0%"
+      numeric_value: 0.0000
+      sort_order: 3
+
+    - value_code: "VAT_EXEMPT"
+      value_name: "Без ПДВ"
+      numeric_value: 0
+      sort_order: 4

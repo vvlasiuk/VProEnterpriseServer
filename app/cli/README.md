@@ -17,8 +17,15 @@ python -m app.cli seed
 <!-- Порядок оновлення -->
 # створити таблиці
 python -m app.cli migrate 
+
 # оновити колонки
 python -m app.cli migrate --update-existing
+
+# оновити перелічення --dry-run без внесення змін (сухий запуск)
+python -m app.cli sync-enumerations 
+
+# Тільки заповнення даними
+python -m app.cli seed
 <!-- Порядок оновлення -->
 
 # Показати доступні команди

@@ -1,0 +1,22 @@
+
+tables:
+  sys_enumeration_type:
+    description: "System enumeration types"
+    columns:
+      # Первинний ключ
+      id:
+        type: "BIGINT"
+        primary_key: true
+        auto_increment: true
+        nullable: false
+
+      type_code:
+        type: "NVARCHAR(150)"
+        nullable: false
+        unique: true
+        comment: "System type code (VAT_RATES, PAYMENT_TYPES)"      
+
+      description:
+        type: "NVARCHAR(150)"
+        nullable: false
+        comment: "Type description"

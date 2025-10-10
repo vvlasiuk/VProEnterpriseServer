@@ -568,5 +568,87 @@ def cleanup_rls():
     
     asyncio.run(cleanup_security())
 
+@db.command()
+@click.option('--dry-run', is_flag=True, help='Show what would be changed without applying')
+def sync_enumerations(dry_run):
+    """Sync enumeration data from YAML files to database"""
+    
+    async def run_sync():
+        from app.services.enumeration_service import EnumerationService
+        
+        enumeration_service = EnumerationService()
+        
+        try:
+            # Initialize database connection
+            await init_database()
+            
+            click.echo("🔄 Starting enumeration synchronization...")
+            
+            if dry_run:
+                click.echo("📋 DRY RUN MODE - No changes will be applied")
+            
+            # Load all enumeration files
+            click.echo("📂 Loading enumeration files...")
+            file_enumerations = enumeration_service.load_all_enumerations()
+            
+            if not file_enumerations:
+                click.echo("⚠️  No enumeration files found")
+                return
+            
+            click.echo(f"✅ Found {len(file_enumerations)} enumeration types")
+            
+            # Get existing data from database
+            click.echo("🔍 Reading current database state...")
+            db_types = await enumeration_service.get_existing_enumeration_types()
+            db_values = await enumeration_service.get_all_existing_enumeration_values()
+            
+            # Perform synchronization
+            results = await enumeration_service.sync_enumerations(
+                file_enumerations, 
+                db_types, 
+                db_values, 
+                dry_run=dry_run
+            )
+            
+            # Display results
+            if results['types_added']:
+                click.echo(f"➕ Added {len(results['types_added'])} enumeration types:")
+                for type_code in results['types_added']:
+                    click.echo(f"   • {type_code}")
+            
+            if results['types_updated']:
+                click.echo(f"🔄 Updated {len(results['types_updated'])} enumeration types:")
+                for type_code in results['types_updated']:
+                    click.echo(f"   • {type_code}")
+            
+            if results['values_added']:
+                click.echo(f"➕ Added {len(results['values_added'])} enumeration values:")
+                for type_code, values in results['values_added'].items():
+                    click.echo(f"   • {type_code}: {', '.join(values)}")
+            
+            if results['values_updated']:
+                click.echo(f"🔄 Updated {len(results['values_updated'])} enumeration values:")
+                for type_code, values in results['values_updated'].items():
+                    click.echo(f"   • {type_code}: {', '.join(values)}")
+            
+            if results['errors']:
+                click.echo(f"❌ Errors ({len(results['errors'])}):")
+                for error in results['errors']:
+                    click.echo(f"   • {error}")
+            
+            if dry_run:
+                click.echo("📋 DRY RUN completed - no changes applied")
+            else:
+                click.echo("✅ Enumeration synchronization completed")
+                
+        except Exception as e:
+            click.echo(f"❌ Synchronization failed: {e}")
+            
+        finally:
+            await cleanup_database()
+    
+    asyncio.run(run_sync())
+
+
 if __name__ == '__main__':
     db()

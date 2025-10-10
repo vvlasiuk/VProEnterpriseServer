@@ -67,27 +67,22 @@ def hash_password(password: str) -> str:
 
 # Замінити authenticate_user на БД
 async def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
-    """Перевірка користувача з бази даних"""
+    """Check user in database"""
     query = """
-    SELECT id, name, full_name, email, password_hash, is_admin, is_active
-    FROM users 
+    SELECT id, name, full_name,email, password_hash, is_admin, is_active
+    FROM cat_users
     WHERE (name = ? OR email = ?) AND is_active = 1
     """
-    
     users = await DatabaseService.execute_query(query, (username, username))
-    
     if not users:
         return None
-    
     user = users[0]
-    # Перевірити пароль (bcrypt)
     if verify_password(password, user["password_hash"]):
         return {
             "id": user["id"],
-            "name": user["name"],           # Додати name
-            "username": user["name"],       # Залишити username для сумісності
-            "email": user["email"],
+            "name": user["name"],
             "full_name": user["full_name"],
+            "email": user["email"],
             "is_admin": user["is_admin"],
             "role": "admin" if user["is_admin"] else "user"
         }
@@ -95,17 +90,14 @@ async def authenticate_user(username: str, password: str) -> Optional[Dict[str, 
 
 # ВИПРАВЛЕНА ФУНКЦІЯ
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Отримання поточного користувача з БД"""
+    """Get current user from DB"""
     token = credentials.credentials
     payload = verify_token(token)
     user_id = payload.get("user_id")
-    
-    query = "SELECT * FROM users WHERE id = ? AND is_active = 1"
+    query = "SELECT * FROM cat_users WHERE id = ? AND is_active = 1"
     users = await DatabaseService.execute_query(query, (user_id,))
-    
     if not users:
         raise HTTPException(status_code=401, detail="User not found")
-    
     return users[0]
 
 def require_admin_role(current_user: Dict = None):

@@ -57,7 +57,7 @@ Thumbs.db
 # app/static/favicon.ico
 
 # Temporary files
-temp_script/*
+# temp_script/*
 *.tmp
 *.temp
 

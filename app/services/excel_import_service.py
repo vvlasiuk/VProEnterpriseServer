@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import logging
 from io import BytesIO
+import aioodbc
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ class ExcelImportService:
         
         return result
     
-    def read_excel_data(self, file_content: bytes, filename: str, 
+    def read_excel_file(self, file_content: bytes, filename: str, 
                        sheet_name: Union[str, int] = 0, 
                        skip_rows: int = 0,
                        max_rows: Optional[int] = None) -> Dict[str, Any]:
@@ -95,10 +96,14 @@ class ExcelImportService:
                     sheet_name=sheet_name,
                     skiprows=skip_rows,
                     nrows=max_rows,
-                    dtype=str,  # Read everything as strings initially
-                    na_filter=False,  # Don't convert to NaN
+                    dtype=str,
+                    na_filter=False,
                     engine='openpyxl' if file_ext == '.xlsx' else 'xlrd'
                 )
+                if isinstance(df, dict):
+                    # Вибрати першу вкладку, якщо повернувся dict
+                    first_sheet = list(df.keys())[0]
+                    df = df[first_sheet]
             
             # Clean up data
             df = self._clean_dataframe(df)
@@ -221,18 +226,18 @@ class ExcelImportService:
             for row_idx, row in enumerate(data):
                 row_errors = []
                 
-                # Check required fields
-                for required_field in required_fields:
-                    mapped_excel_col = None
-                    for excel_col, table_col in column_mapping.items():
-                        if table_col == required_field:
-                            mapped_excel_col = excel_col
-                            break
+                # # Check required fields
+                # for required_field in required_fields:
+                #     mapped_excel_col = None
+                #     for excel_col, table_col in column_mapping.items():
+                #         if table_col == required_field:
+                #             mapped_excel_col = excel_col
+                #             break
                     
-                    if mapped_excel_col is None:
-                        row_errors.append(f"Required field '{required_field}' not mapped")
-                    elif not row.get(mapped_excel_col) or str(row.get(mapped_excel_col)).strip() == '':
-                        row_errors.append(f"Required field '{required_field}' is empty")
+                #     if mapped_excel_col is None:
+                #         row_errors.append(f"Required field '{required_field}' not mapped")
+                #     elif not row.get(mapped_excel_col) or str(row.get(mapped_excel_col)).strip() == '':
+                #         row_errors.append(f"Required field '{required_field}' is empty")
                 
                 # Validate data types
                 for excel_col, table_col in column_mapping.items():
@@ -497,3 +502,30 @@ class ExcelImportService:
             return 'boolean'
         else:
             return 'text'
+    
+    async def import_data_batch(self, data: List[Dict], table_name: str, batch_size: int = 100, db_manager=None):
+        """
+        Імпортує дані порціями у таблицю через DatabaseManager.
+        Повертає: {'success': bool, 'imported': int, 'imported_records': List, 'errors': List}
+        """
+        result = {'success': True, 'imported': 0, 'imported_records': [], 'errors': []}
+        if db_manager is None:
+            result['success'] = False
+            result['errors'].append('No db_manager provided')
+            return result
+
+        for batch in self.process_in_batches(data, batch_size):
+            if not batch:
+                continue
+            columns = list(batch[0].keys())
+            values = [tuple(row[col] for col in columns) for row in batch]
+            placeholders = ', '.join(['?'] * len(columns))
+            sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
+            try:
+                async with db_manager.get_transaction() as cursor:
+                    await cursor.executemany(sql, values)
+                result['imported'] += len(batch)
+                result['imported_records'].extend(batch)
+            except Exception as e:
+                result['errors'].append(str(e))
+        return result

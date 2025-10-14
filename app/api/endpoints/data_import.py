@@ -1,7 +1,7 @@
 # app/api/endpoints/import.py
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Form
 from fastapi.responses import JSONResponse
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 import logging
 from io import BytesIO
 import asyncio
@@ -12,6 +12,7 @@ from app.services.table_import_schema_service import TableImportSchemaService
 from app.services.external_mapping_service import ExternalMappingService
 from app.services.enumeration_service import EnumerationService
 from app.core.security import get_current_user
+from app.db.database import db_manager
 
 logger = logging.getLogger(__name__)
 
@@ -112,76 +113,59 @@ async def preview_excel_file(
 async def import_excel_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    table_name: str = Form(...),
-    column_mapping: str = Form(...),
+    import_type: str = Form(...),  # ← новий параметр
     source_id: int = Form(1),
-    sheet_name: Optional[str] = Form(None),
+    sheet_name: Optional[Union[str, int]] = Form(0),
     batch_size: int = Form(100),
     current_user = Depends(get_current_user)
 ):
-    """Import Excel file to specified table"""
+    """Import Excel file by import_type (multi-table logic)"""
     try:
-        # Parse column_mapping from JSON string
-        try:
-            column_mapping_dict = json.loads(column_mapping)
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=400, detail="Invalid JSON format for column_mapping")
-        
-        # Validate table exists
-        table_info = schema_service.get_table_import_info(table_name)
-        if not table_info:
-            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
-        
-        # Validate column mapping
-        mapping_validation = schema_service.validate_import_columns(table_name, column_mapping_dict)
-        if not mapping_validation['valid']:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "valid": False,
-                    "errors": mapping_validation['errors'],
-                    "missing_required": mapping_validation.get('missing_required', []),
-                    "invalid_columns": mapping_validation.get('invalid_columns', [])
-                }
-            )
-        
-        # Read file content
+        # 1. Зчитати файл
         file_content = await file.read()
-        
-        # Validate file
-        validation_result = excel_service.validate_file(file_content, file.filename)
-        if not validation_result['valid']:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "valid": False,
-                    "errors": validation_result['errors']
-                }
-            )
-        
-        # Start background import task
-        task_id = f"import_{table_name}_{current_user.id}_{asyncio.get_event_loop().time()}"
-        
-        background_tasks.add_task(
-            process_excel_import,
-            task_id=task_id,
-            file_content=file_content,
-            filename=file.filename,
-            table_name=table_name,
-            column_mapping=column_mapping_dict,
-            source_id=source_id,
-            sheet_name=sheet_name,
-            batch_size=batch_size,
-            user_id=current_user.id
-        )
-        
+        excel_data = excel_service.read_excel_file(file_content, file.filename, sheet_name)
+        if not excel_data['success']:
+            raise HTTPException(status_code=400, detail="Excel read error")
+
+        # 2. Визначити конфігурацію по import_type
+        config = get_import_config(import_type)
+
+        # 3. Для кожної таблиці виконати імпорт
+        task_ids = []
+        for table_name, column_mapping in config['tables'].items():
+            task_id = f"import_{table_name}_{current_user['id']}_{asyncio.get_event_loop().time()}"
+            # background_tasks.add_task(
+            #     process_excel_import,
+            #     task_id=task_id,
+            #     excel_data=excel_data,  # передаємо вже оброблені дані
+            #     table_name=table_name,
+            #     column_mapping=column_mapping,
+            #     source_id=source_id,
+            #     batch_size=batch_size,
+            #     user_id=current_user['id']
+            # )
+            # task_ids.append(task_id)
+
+            if table_name == "cat_products_brands":
+                brands_schema = schema_service.get_table_import_info(table_name)
+                background_tasks.add_task(
+                    import_brands_data,
+                    task_id=task_id,
+                    brands_data=excel_data,
+                    table_schema=brands_schema,
+                    column_mapping=column_mapping,
+                    source_id=source_id,
+                    batch_size=batch_size,
+                    user_id=current_user['id']
+                )
+
         return {
-            "task_id": task_id,
+            "task_ids": task_ids,
             "message": "Import started in background",
-            "table_name": table_name,
+            "import_type": import_type,
             "status": "processing"
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -190,12 +174,10 @@ async def import_excel_file(
 
 async def process_excel_import(
     task_id: str,
-    file_content: bytes,
-    filename: str,
+    excel_data: Dict,  # приймаємо вже оброблені дані
     table_name: str,
     column_mapping: Dict[str, str],
     source_id: int,
-    sheet_name: Optional[str],
     batch_size: int,
     user_id: int
 ):
@@ -203,51 +185,47 @@ async def process_excel_import(
     try:
         logger.info(f"Starting import task {task_id} for table {table_name}")
         
-        # Read Excel data
-        excel_data = excel_service.read_excel_file(file_content, filename, sheet_name)
-        if not excel_data['success']:
-            logger.error(f"Failed to read Excel file in task {task_id}: {excel_data['errors']}")
-            return
-        
-        # Transform data according to column mapping
+        # Далі працюємо з excel_data['data'], excel_data['columns'] і т.д.
         transformed_data = excel_service.transform_data(
-            excel_data['data'], 
-            column_mapping, 
+            excel_data['data'],
+            column_mapping,
             table_name
         )
         
-        if not transformed_data['success']:
+        if not transformed_data:
             logger.error(f"Failed to transform data in task {task_id}: {transformed_data['errors']}")
             return
         
-        # Validate transformed data
-        validation_result = excel_service.validate_data(
-            transformed_data['data'],
-            table_name
-        )
+    #     table_schema = schema_service.get_table_import_info(table_name)
+    #     # Validate transformed data
+    #     validation_result = excel_service.validate_data(
+    #         transformed_data,
+    #         table_schema,
+    #         column_mapping
+    #     )
         
-        if not validation_result['success']:
-            logger.error(f"Data validation failed in task {task_id}: {validation_result['errors']}")
-            return
+    #     if not validation_result['valid']:
+    #         logger.error(f"Data validation failed in task {task_id}: {validation_result['errors']}")
+    #         return
         
-        # Import data in batches
-        import_result = await excel_service.import_data_batch(
-            validation_result['data'],
-            table_name,
-            batch_size
-        )
+    #     # Import data in batches
+    #     import_result = await excel_service.import_data_batch(
+    #         validation_result['data'],
+    #         table_name,
+    #         batch_size
+    #     )
         
-        # Create external mappings if needed
-        if import_result['success'] and import_result.get('imported_records'):
-            await create_external_mappings(
-                source_id,
-                table_name,
-                import_result['imported_records'],
-                excel_data['data'],
-                column_mapping
-            )
+    #     # Create external mappings if needed
+    #     if import_result['success'] and import_result.get('imported_records'):
+    #         await create_external_mappings(
+    #             source_id,
+    #             table_name,
+    #             import_result['imported_records'],
+    #             excel_data['data'],
+    #             column_mapping
+    #         )
         
-        logger.info(f"Completed import task {task_id}: {import_result['imported']} records imported")
+    #     logger.info(f"Completed import task {task_id}: {import_result['imported']} records imported")
         
     except Exception as e:
         logger.error(f"Error in background import task {task_id}: {e}")
@@ -325,3 +303,80 @@ async def get_import_statistics(source_id: Optional[int] = None):
     except Exception as e:
         logger.error(f"Error getting statistics: {e}")
         raise HTTPException(status_code=500, detail="Failed to get statistics")
+
+def get_import_config(import_type: str):
+    configs = {
+        "products_brands_import": {
+            "tables": {
+                "cat_products_brands": {"Name": "name", "External_ID": "external_id", "Mark_deleted": "mark_deleted"},
+                # Додайте інші таблиці та мапінги
+            }
+        },
+        # Інші типи імпорту
+
+
+    }
+    return configs.get(import_type)
+
+async def import_brands_data(
+    task_id: str,
+    brands_data: List[Dict],
+    table_schema: Dict,
+    column_mapping: Dict[str, str],
+    source_id: int,
+    batch_size: int,
+    user_id: int, db_manager=db_manager
+):
+    """Імпорт брендів у базу даних"""
+    try:
+        logger.info(f"Starting brands import task {task_id}")
+
+        # # Валідація
+        # validation_result = excel_service.validate_data(
+        #     brands_data,
+        #     table_schema,
+        #     column_mapping
+        # )
+        # if not validation_result['valid']:
+        #     logger.error(f"Brands data validation failed: {validation_result['errors']}")
+        #     return
+        rows = brands_data['data']
+        selected_rows = [
+            {'Name': row.get('Name'), 'Mark_deleted': row.get('Mark_deleted')}
+            for row in rows if 'Name' in row or 'Mark_deleted' in row
+        ]
+
+        row['created_by'] =  row.get('created_by', None)
+
+        for row in selected_rows:
+            row['Mark_deleted'] = mark_deleted_to_bit(row.get('Mark_deleted'))
+            row['created_by'] = user_id
+
+        # Імпорт порціями
+        import_result = await excel_service.import_data_batch(
+            selected_rows,
+            "cat_products_brands",  # назва таблиці для брендів
+            batch_size, db_manager=db_manager
+        )
+
+        # # Створення зовнішніх мапінгів
+        # if import_result['success'] and import_result.get('imported_records'):
+        #     await create_external_mappings(
+        #         source_id,
+        #         "cat_products_brands",
+        #         import_result['imported_records'],
+        #         brands_data,
+        #         column_mapping
+        #     )
+
+        # logger.info(f"Completed brands import task {task_id}: {import_result['imported']} records imported")
+
+    except Exception as e:
+        logger.error(f"Error in brands import task {task_id}: {e}")
+
+def mark_deleted_to_bit(value):
+    if value is None or str(value).strip() == '':
+        return 0
+    if str(value).strip() in ['0', 'false', 'no']:
+        return 0
+    return 1

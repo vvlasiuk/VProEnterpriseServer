@@ -2,12 +2,12 @@
 parent_tables:
   
   catalog:
-    id:
+    _id:
       type: "BIGINT"
       primary_key: true
       auto_increment: true
       nullable: false 
-    name:
+    _name:
       type: "NVARCHAR(150)"
       nullable: false
       comment: "Назва"
@@ -25,13 +25,15 @@ parent_tables:
     #   nullable: false
     #   default: 1
     #   comment: "Активний"
-    created_at:
+    _version:
+      type: "ROWVERSION"
+    _created_at:
       type: "DATETIME2"
       default: "GETDATE()"
-    created_by:
+    _created_by:
       type: "BIGINT"
       foreign_key: "cat_users.id"
-    mark_deleted:
+    _mark_deleted:
       type: "BIT"
       nullable: false
       default: 0

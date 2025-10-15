@@ -236,7 +236,7 @@ def show_table(table_name):
             for index in indexes:
                 unique = "[UNIQUE] " if index.get('unique') else ""
                 columns = ', '.join(index['columns'])
-                name = index.get('name', 'auto-generated')
+                name = index.get('_name', 'auto-generated')
                 click.echo(f"   • {unique}{name} ({columns})")
         
         # SQL Preview

@@ -75,11 +75,11 @@ async def create_user(
     require_admin_role(current_user)
     
     new_user = {
-        "id": len(MOCK_USERS) + 1,
-        "name": user_data.get("name", "Unknown"),
+        "_id": len(MOCK_USERS) + 1,
+        "_name": user_data.get("name", "Unknown"),
         "email": user_data.get("email", "unknown@example.com"),
-        "created_at": datetime.utcnow().isoformat(),
-        "created_by": current_user["username"]
+        "_created_at": datetime.utcnow().isoformat(),
+        "_created_by": current_user["username"]
     }
     MOCK_USERS.append(new_user)
     return new_user

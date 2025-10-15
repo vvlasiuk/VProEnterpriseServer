@@ -47,14 +47,14 @@ class SeedDataService:
         if user_count == 0:
             # Створити адміністратора
             admin_data = {
-                "name": "Administrator",
+                "_name": "Administrator",
                 "full_name": "System Administrator",
                 "email": "",
                 "password_hash": self._hash_password("admin"),
                 "is_active": True,
                 "is_admin": True,
-                "created_at": "GETDATE()",
-                "created_by": 1  # Self-reference
+                "_created_at": "GETDATE()",
+                "_created_by": 1  # Self-reference
             }
             
             await self._insert_user(admin_data)
@@ -75,12 +75,12 @@ class SeedDataService:
     async def _insert_user(self, user_data: dict):
         """Вставити користувача в БД"""
         query = """
-        INSERT INTO cat_users (name, full_name, email, password_hash, is_active, is_admin, created_at)
+        INSERT INTO cat_users (_name, full_name, email, password_hash, is_active, is_admin, _created_at)
         VALUES (?, ?, ?, ?, ?, ?, GETDATE())
         """
         
         await DatabaseService.execute_non_query(query, (
-            user_data["name"],
+            user_data["_name"],
             # user_data["code"], 
             user_data["full_name"],
             user_data["email"],
@@ -99,29 +99,29 @@ class SeedDataService:
             # Базові типи продукції
             product_types = [
                 {
-                    "name": "Товари",
+                    "_name": "Товари",
                     "type_code": "GOODS", 
-                    "created_by": 1
+                    "_created_by": 1
                 },
                 {
-                    "name": "Матеріали", 
+                    "_name": "Матеріали", 
                     "type_code": "MATERIALS",
-                    "created_by": 1
+                    "_created_by": 1
                 },
                 {
-                    "name": "Послуги",
+                    "_name": "Послуги",
                     "type_code": "SERVICES", 
-                    "created_by": 1
+                    "_created_by": 1
                 },
                 {
-                    "name": "Сировина",
+                    "_name": "Сировина",
                     "type_code": "RAW",
-                    "created_by": 1
+                    "_created_by": 1
                 },
                 {
-                    "name": "Тара",
+                    "_name": "Тара",
                     "type_code": "PACKAGING",
-                    "created_by": 1
+                    "_created_by": 1
                 }
             ]
             
@@ -131,12 +131,12 @@ class SeedDataService:
     async def _insert_product_type(self, product_type_data: dict):
         """Вставити тип продукції в БД"""
         query = """
-        INSERT INTO cat_products_type (name, type_code, created_by, created_at)
+        INSERT INTO cat_products_type (_name, type_code, _created_by, _created_at)
         VALUES (?, ?, ?, GETDATE())
         """
         
         await DatabaseService.execute_non_query(query, (
-            product_type_data["name"],
+            product_type_data["_name"],
             product_type_data["type_code"], 
-            product_type_data["created_by"]
+            product_type_data["_created_by"]
         ))

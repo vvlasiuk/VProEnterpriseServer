@@ -503,29 +503,29 @@ class ExcelImportService:
         else:
             return 'text'
     
-    async def import_data_batch(self, data: List[Dict], table_name: str, batch_size: int = 100, db_manager=None):
-        """
-        Імпортує дані порціями у таблицю через DatabaseManager.
-        Повертає: {'success': bool, 'imported': int, 'imported_records': List, 'errors': List}
-        """
-        result = {'success': True, 'imported': 0, 'imported_records': [], 'errors': []}
-        if db_manager is None:
-            result['success'] = False
-            result['errors'].append('No db_manager provided')
-            return result
+    # async def import_data_batch(self, data: List[Dict], table_name: str, batch_size: int = 100, db_manager=None):
+    #     """
+    #     Імпортує дані порціями у таблицю через DatabaseManager.
+    #     Повертає: {'success': bool, 'imported': int, 'imported_records': List, 'errors': List}
+    #     """
+    #     result = {'success': True, 'imported': 0, 'imported_records': [], 'errors': []}
+    #     if db_manager is None:
+    #         result['success'] = False
+    #         result['errors'].append('No db_manager provided')
+    #         return result
 
-        for batch in self.process_in_batches(data, batch_size):
-            if not batch:
-                continue
-            columns = list(batch[0].keys())
-            values = [tuple(row[col] for col in columns) for row in batch]
-            placeholders = ', '.join(['?'] * len(columns))
-            sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
-            try:
-                async with db_manager.get_transaction() as cursor:
-                    await cursor.executemany(sql, values)
-                result['imported'] += len(batch)
-                result['imported_records'].extend(batch)
-            except Exception as e:
-                result['errors'].append(str(e))
-        return result
+    #     for batch in self.process_in_batches(data, batch_size):
+    #         if not batch:
+    #             continue
+    #         columns = list(batch[0].keys())
+    #         values = [tuple(row[col] for col in columns) for row in batch]
+    #         placeholders = ', '.join(['?'] * len(columns))
+    #         sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
+    #         try:
+    #             async with db_manager.get_transaction() as cursor:
+    #                 await cursor.executemany(sql, values)
+    #             result['imported'] += len(batch)
+    #             result['imported_records'].extend(batch)
+    #         except Exception as e:
+    #             result['errors'].append(str(e))
+    #     return result

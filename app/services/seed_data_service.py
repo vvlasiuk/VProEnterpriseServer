@@ -47,7 +47,7 @@ class SeedDataService:
         if user_count == 0:
             # Створити адміністратора
             admin_data = {
-                "_name": "Administrator",
+                "name": "Admin",
                 "full_name": "System Administrator",
                 "email": "",
                 "password_hash": self._hash_password("admin"),
@@ -75,12 +75,12 @@ class SeedDataService:
     async def _insert_user(self, user_data: dict):
         """Вставити користувача в БД"""
         query = """
-        INSERT INTO cat_users (_name, full_name, email, password_hash, is_active, is_admin, _created_at)
+        INSERT INTO cat_users (name, full_name, email, password_hash, is_active, is_admin, _created_at)
         VALUES (?, ?, ?, ?, ?, ?, GETDATE())
         """
         
         await DatabaseService.execute_non_query(query, (
-            user_data["_name"],
+            user_data["name"],
             # user_data["code"], 
             user_data["full_name"],
             user_data["email"],
@@ -131,7 +131,7 @@ class SeedDataService:
     async def _insert_product_type(self, product_type_data: dict):
         """Вставити тип продукції в БД"""
         query = """
-        INSERT INTO cat_products_type (_name, type_code, _created_by, _created_at)
+        INSERT INTO cat_products_type (name, type_code, _created_by, _created_at)
         VALUES (?, ?, ?, GETDATE())
         """
         

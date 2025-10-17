@@ -7,7 +7,7 @@ parent_tables:
       primary_key: true
       auto_increment: true
       nullable: false 
-    _name:
+    name:
       type: "NVARCHAR(150)"
       nullable: false
       comment: "Назва"
@@ -33,7 +33,7 @@ parent_tables:
     _created_by:
       type: "BIGINT"
       foreign_key: "cat_users.id"
-    _mark_deleted:
+    mark_deleted:
       type: "BIT"
       nullable: false
       default: 0

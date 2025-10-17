@@ -7,6 +7,7 @@ from io import BytesIO
 import asyncio
 import json
 
+from app.models.models_catalog.products_brands import Cat_ProductBrand
 from app.services.excel_import_service import ExcelImportService
 from app.services.table_import_schema_service import TableImportSchemaService
 from app.services.external_mapping_service import ExternalMappingService
@@ -352,12 +353,14 @@ async def import_brands_data(
             row['Mark_deleted'] = mark_deleted_to_bit(row.get('Mark_deleted'))
             row['created_by'] = user_id
 
-        # Імпорт порціями
-        import_result = await excel_service.import_data_batch(
-            selected_rows,
-            "cat_products_brands",  # назва таблиці для брендів
-            batch_size, db_manager=db_manager
-        )
+        brand = Cat_ProductBrand()
+
+        # # Імпорт порціями
+        # import_result = await excel_service.import_data_batch(
+        #     selected_rows,
+        #     "cat_products_brands",  # назва таблиці для брендів
+        #     batch_size, db_manager=db_manager
+        # )
 
         # # Створення зовнішніх мапінгів
         # if import_result['success'] and import_result.get('imported_records'):

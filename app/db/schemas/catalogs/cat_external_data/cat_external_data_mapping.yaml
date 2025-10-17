@@ -4,7 +4,7 @@ tables:
   cat_external_data_mapping:
     description: "External ID mapping"
     columns:
-      id:
+      _id:
         type: "BIGINT"
         primary_key: true
         auto_increment: true
@@ -37,7 +37,7 @@ tables:
         comment: "Тип даних"
       
       # Дата створення
-      created_at:
+      _created_at:
         type: "DATETIME2"
         default: "GETDATE()"
         comment: "Дата створення зв'язку"

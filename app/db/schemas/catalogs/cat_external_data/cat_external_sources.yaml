@@ -2,7 +2,7 @@
 version: "1.0.0"
 
 tables:
-  cat_external_data_sources:
+  cat_external_sources:
     description: "Зовнішні джерела даних"
     parent: "catalog"  # Успадковує id, name, created_at, created_by
     columns:     

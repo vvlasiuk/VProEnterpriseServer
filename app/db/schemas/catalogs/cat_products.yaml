@@ -27,3 +27,12 @@ tables:
         type: "NVARCHAR(50)"
         nullable: true
         comment: "Артикул"
+      test_brand_category_id:
+        type: "BIGINT"
+        nullable: true
+        comment: "ТЕСТ декілька типів"
+      test_brand_category_typeid:
+        type: "BIGINT"
+        foreign_key: "sys_data_types.id"
+        nullable: true
+        comment: "ТЕСТ декілька типів"

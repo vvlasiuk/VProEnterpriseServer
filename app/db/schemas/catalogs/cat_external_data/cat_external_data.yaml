@@ -1,7 +1,7 @@
 version: "1.0.0"
 
 tables:
-  cat_external_data_mapping:
+  cat_external_data:
     description: "External ID mapping"
     columns:
       _id:
@@ -11,10 +11,10 @@ tables:
         nullable: false
       
       # Джерело даних
-      source_id:
+      external_source_id:
         type: "BIGINT"
         nullable: false
-        foreign_key: "cat_external_data_sources.id"
+        foreign_key: "cat_external_sources.id"
         comment: "Джерело даних"
       
       # Зовнішній ідентифікатор
@@ -30,7 +30,7 @@ tables:
         comment: "ID запису в нашій БД"
       
       # Тип даних
-      internal_type_id:
+      internal_typeid:
         type: "BIGINT"
         nullable: false
         foreign_key: "sys_data_types.id"
@@ -43,7 +43,7 @@ tables:
         comment: "Дата створення зв'язку"
     indexes:
       - name: "IX_external_mapping_unique"
-        columns: ["source_id", "internal_type_id", "external_id"]  # ← Виправити тут
+        columns: ["external_source_id", "internal_typeid", "external_id"]  # ← Виправити тут
         unique: true
       - name: "IX_external_mapping_internal"
         columns: ["internal_id"]

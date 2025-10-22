@@ -172,6 +172,10 @@ class SchemaManager:
         else:
             nullable = column_def.get('nullable', True)
         
+        # Додати підтримку ROWVERSION
+        if column_type.upper() == "ROWVERSION":
+            column_type = "rowversion"
+       
         # NULL/NOT NULL
         null_sql = "NOT NULL" if not nullable else "NULL"
         

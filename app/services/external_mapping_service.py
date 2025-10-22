@@ -56,7 +56,7 @@ class ExternalMappingService:
         try:
             query = """
                 SELECT internal_id 
-                FROM cat_external_data_mapping 
+                FROM cat_external_data 
                 WHERE source_id = ? AND external_id = ? AND internal_type_id = ?
             """
             result = await self.db.execute_scalar(query, (source_id, external_id, data_type_id))
@@ -77,7 +77,7 @@ class ExternalMappingService:
         """Create new external ID mapping"""
         try:
             query = """
-                INSERT INTO cat_external_data_mapping (source_id, external_id, internal_id, internal_type_id, created_at)
+                INSERT INTO cat_external_data (source_id, external_id, internal_id, internal_type_id, created_at)
                 VALUES (?, ?, ?, ?, GETDATE())
             """
             await self.db.execute_query(query, (source_id, external_id, internal_id, data_type_id))
@@ -100,7 +100,7 @@ class ExternalMappingService:
         """Update existing external ID mapping"""
         try:
             query = """
-                UPDATE cat_external_data_mapping 
+                UPDATE cat_external_data 
                 SET internal_id = ?
                 WHERE source_id = ? AND external_id = ? AND internal_type_id = ?
             """
@@ -115,7 +115,7 @@ class ExternalMappingService:
         """Delete external ID mapping"""
         try:
             query = """
-                DELETE FROM cat_external_data_mapping 
+                DELETE FROM cat_external_data 
                 WHERE source_id = ? AND external_id = ? AND internal_type_id = ?
             """
             await self.db.execute_query(query, (source_id, external_id, data_type_id))
@@ -132,7 +132,7 @@ class ExternalMappingService:
                 query = """
                     SELECT m.id, m.external_id, m.internal_id, m.created_at,
                            dt.type_name, dt.table_name
-                    FROM cat_external_data_mapping m
+                    FROM cat_external_data m
                     JOIN sys_data_types dt ON m.internal_type_id = dt.id
                     WHERE m.source_id = ? AND m.internal_type_id = ?
                     ORDER BY m.created_at DESC
@@ -142,7 +142,7 @@ class ExternalMappingService:
                 query = """
                     SELECT m.id, m.external_id, m.internal_id, m.created_at,
                            dt.type_name, dt.table_name
-                    FROM cat_external_data_mapping m
+                    FROM cat_external_data m
                     JOIN sys_data_types dt ON m.internal_type_id = dt.id
                     WHERE m.source_id = ?
                     ORDER BY dt.type_name, m.created_at DESC
@@ -172,7 +172,7 @@ class ExternalMappingService:
             query = f"""
                 SELECT t.id as internal_id, t.*, m.external_id, m.created_at as mapped_at
                 FROM {table_name} t
-                LEFT JOIN cat_external_data_mapping m ON t.id = m.internal_id 
+                LEFT JOIN cat_external_data m ON t.id = m.internal_id 
                     AND m.source_id = ? AND m.internal_type_id = ?
                 ORDER BY t.id
             """
@@ -239,7 +239,7 @@ class ExternalMappingService:
             placeholders = ','.join(['?' for _ in external_ids])
             query = f"""
                 SELECT external_id, internal_id
-                FROM cat_external_data_mapping
+                FROM cat_external_data
                 WHERE source_id = ? AND internal_type_id = ? AND external_id IN ({placeholders})
             """
             
@@ -270,7 +270,7 @@ class ExternalMappingService:
                     MIN(m.created_at) as first_mapping,
                     MAX(m.created_at) as last_mapping
                 FROM sys_data_types dt
-                LEFT JOIN cat_external_data_mapping m ON dt.id = m.internal_type_id
+                LEFT JOIN cat_external_data m ON dt.id = m.internal_type_id
             """
             
             if source_id:

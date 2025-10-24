@@ -22,25 +22,25 @@ class Catalog:
             await self.__class__.init_head_typeid()
 
         # sql = f"INSERT INTO cat_external_data (external_id, external_source_id, internal_id, internal_typeid) OUTPUT INSERTED._id VALUES (?, ?, ?, ?)"
-            sql = """
-            MERGE INTO cat_external_data AS target
-            USING (SELECT ? AS external_id, ? AS external_source_id, ? AS internal_id, ? AS internal_typeid) AS source
-                ON target.external_id = source.external_id
-                AND target.external_source_id = source.external_source_id
-                AND target.internal_id = source.internal_id
-                AND target.internal_typeid = source.internal_typeid
-            WHEN MATCHED THEN
-                UPDATE SET external_id = source.external_id
-            WHEN NOT MATCHED THEN
-                INSERT (external_id, external_source_id, internal_id, internal_typeid)
-                VALUES (source.external_id, source.external_source_id, source.internal_id, source.internal_typeid)
-            OUTPUT INSERTED._id;
-            """        
-            params = (
-            self.head.external_id,
-            self.head.external_source_id,
-            self.head._id,
-            self._db_head['table_typeid']
+        sql = """
+        MERGE INTO cat_external_data AS target
+        USING (SELECT ? AS external_id, ? AS external_source_id, ? AS internal_id, ? AS internal_typeid) AS source
+            ON target.external_id = source.external_id
+            AND target.external_source_id = source.external_source_id
+            AND target.internal_id = source.internal_id
+            AND target.internal_typeid = source.internal_typeid
+        WHEN MATCHED THEN
+            UPDATE SET external_id = source.external_id
+        WHEN NOT MATCHED THEN
+            INSERT (external_id, external_source_id, internal_id, internal_typeid)
+            VALUES (source.external_id, source.external_source_id, source.internal_id, source.internal_typeid)
+        OUTPUT INSERTED._id;
+        """        
+        params = (
+        self.head.external_id,
+        self.head.external_source_id,
+        self.head._id,
+        self._db_head['table_typeid']
         )
         async with db_manager.get_transaction() as cursor:
             await cursor.execute(sql, params)

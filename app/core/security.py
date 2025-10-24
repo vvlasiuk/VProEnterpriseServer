@@ -69,7 +69,7 @@ def hash_password(password: str) -> str:
 async def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
     """Check user in database"""
     query = """
-    SELECT id, name, full_name,email, password_hash, is_admin, is_active
+    SELECT _id, name, full_name,email, password_hash, is_admin, is_active
     FROM cat_users
     WHERE (name = ? OR email = ?) AND is_active = 1
     """
@@ -79,7 +79,7 @@ async def authenticate_user(username: str, password: str) -> Optional[Dict[str, 
     user = users[0]
     if verify_password(password, user["password_hash"]):
         return {
-            "id": user["id"],
+            "_id": user["_id"],
             "name": user["name"],
             "full_name": user["full_name"],
             "email": user["email"],
@@ -94,7 +94,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     token = credentials.credentials
     payload = verify_token(token)
     user_id = payload.get("user_id")
-    query = "SELECT * FROM cat_users WHERE id = ? AND is_active = 1"
+    query = "SELECT * FROM cat_users WHERE _id = ? AND is_active = 1"
     users = await DatabaseService.execute_query(query, (user_id,))
     if not users:
         raise HTTPException(status_code=401, detail="User not found")

@@ -7,7 +7,7 @@ from io import BytesIO
 import asyncio
 import json
 
-from app.models.models_catalog.products_brands import Cat_ProductBrand
+from app.models.models_catalog.cat_products_brands import Cat_ProductBrand
 from app.services.excel_import_service import ExcelImportService
 from app.services.table_import_schema_service import TableImportSchemaService
 from app.services.external_mapping_service import ExternalMappingService
@@ -131,10 +131,10 @@ async def import_excel_file(
         # 2. Визначити конфігурацію по import_type
         config = get_import_config(import_type)
 
-        # 3. Для кожної таблиці виконати імпорт
+        # # 3. Для кожної таблиці виконати імпорт
         task_ids = []
         for table_name, column_mapping in config['tables'].items():
-            task_id = f"import_{table_name}_{current_user['id']}_{asyncio.get_event_loop().time()}"
+            task_id = f"import_{table_name}_{current_user['_id']}_{asyncio.get_event_loop().time()}"
             # background_tasks.add_task(
             #     process_excel_import,
             #     task_id=task_id,
@@ -157,7 +157,7 @@ async def import_excel_file(
                     column_mapping=column_mapping,
                     source_id=source_id,
                     batch_size=batch_size,
-                    user_id=current_user['id']
+                    user_id=current_user['_id']
                 )
 
         return {
@@ -343,17 +343,27 @@ async def import_brands_data(
         #     return
         rows = brands_data['data']
         selected_rows = [
-            {'Name': row.get('Name'), 'Mark_deleted': row.get('Mark_deleted')}
+            {
+                'Name': row.get('Name'),
+                'Mark_deleted': row.get('Mark_deleted'),
+                'External_ID': row.get('External_ID'),
+                'created_by': row.get('created_by', None)
+            }
             for row in rows if 'Name' in row or 'Mark_deleted' in row
         ]
-
-        row['created_by'] =  row.get('created_by', None)
 
         for row in selected_rows:
             row['Mark_deleted'] = mark_deleted_to_bit(row.get('Mark_deleted'))
             row['created_by'] = user_id
 
-        brand = Cat_ProductBrand()
+        for row in selected_rows:
+            brand = Cat_ProductBrand.new()
+            brand.head.name = row.get('Name')
+            brand.head.mark_deleted = row.get('Mark_deleted', 0)
+            brand.head._created_by = user_id
+            brand.head.external_id = row.get('External_ID', None)
+            brand.head.external_source_id = source_id
+            await brand.save()
 
         # # Імпорт порціями
         # import_result = await excel_service.import_data_batch(

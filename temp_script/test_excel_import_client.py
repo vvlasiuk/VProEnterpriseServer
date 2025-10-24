@@ -270,7 +270,7 @@ class ExcelImportClient:
         print("="*60)
         
         # 1. Authentication
-        if not self.authenticate(username="Administrator", password="admin"):
+        if not self.authenticate(username="Admin", password="admin"):
             print("❌ Test terminated due to authentication error")
             return
         

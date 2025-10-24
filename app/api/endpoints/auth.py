@@ -34,7 +34,7 @@ async def login(credentials: Dict[str, str]):
     access_token = create_access_token(
         data={
             "sub": user["name"],
-            "user_id": user["id"],
+            "user_id": user["_id"],
             "email": user["email"],
             "is_admin": user["is_admin"],
             "role": user["role"]
@@ -47,7 +47,7 @@ async def login(credentials: Dict[str, str]):
         "token_type": "bearer", 
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "user": {
-            "id": user["id"],
+            "_id": user["_id"],
             "name": user["name"],
             "full_name": user["full_name"],
             "email": user["email"],

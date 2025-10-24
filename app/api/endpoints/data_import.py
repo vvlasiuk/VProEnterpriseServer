@@ -357,12 +357,20 @@ async def import_brands_data(
             row['created_by'] = user_id
 
         for row in selected_rows:
-            brand = Cat_ProductBrand.new()
-            brand.head.name = row.get('Name')
-            brand.head.mark_deleted = row.get('Mark_deleted', 0)
-            brand.head._created_by = user_id
-            brand.head.external_id = row.get('External_ID', None)
-            brand.head.external_source_id = source_id
+
+            brand = await Cat_ProductBrand.get_by_external_id(row.get('External_ID'), source_id)
+
+            if brand:
+                # Оновлення існуючого запису
+                brand.head.name = row.get('Name')
+                brand.head.mark_deleted = row.get('Mark_deleted', 0)
+            else:
+                brand = Cat_ProductBrand.new()
+                brand.head.name = row.get('Name')
+                brand.head.mark_deleted = row.get('Mark_deleted', 0)
+                brand.head._created_by = user_id
+                brand.head.external_id = row.get('External_ID', None)
+                brand.head.external_source_id = source_id
             await brand.save()
 
         # # Імпорт порціями

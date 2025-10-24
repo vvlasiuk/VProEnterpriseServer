@@ -41,9 +41,4 @@ tables:
         type: "DATETIME2"
         default: "GETDATE()"
         comment: "Дата створення зв'язку"
-    indexes:
-      - name: "IX_external_mapping_unique"
-        columns: ["external_source_id", "internal_typeid", "external_id"]  # ← Виправити тут
-        unique: true
-      - name: "IX_external_mapping_internal"
-        columns: ["internal_id"]
+    

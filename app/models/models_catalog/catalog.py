@@ -12,39 +12,39 @@ class Catalog:
         cls._db_head['table_typeid'] = await Catalog.get_head_typeid(cls._db_head["table_name"])
 
     async def save_external_id(self):
-        if not self.head :
+        if not self.head:
             return None
-        
+
         if not self.head.external_id or not self.head.external_source_id or not self.head._id:
             return None
 
         if self._db_head['table_typeid'] is None:
             await self.__class__.init_head_typeid()
 
-        # sql = f"INSERT INTO cat_external_data (external_id, external_source_id, internal_id, internal_typeid) OUTPUT INSERTED._id VALUES (?, ?, ?, ?)"
-        sql = """
-        MERGE INTO cat_external_data AS target
-        USING (SELECT ? AS external_id, ? AS external_source_id, ? AS internal_id, ? AS internal_typeid) AS source
-            ON target.external_id = source.external_id
-            AND target.external_source_id = source.external_source_id
-            AND target.internal_id = source.internal_id
-            AND target.internal_typeid = source.internal_typeid
-        WHEN MATCHED THEN
-            UPDATE SET external_id = source.external_id
-        WHEN NOT MATCHED THEN
-            INSERT (external_id, external_source_id, internal_id, internal_typeid)
-            VALUES (source.external_id, source.external_source_id, source.internal_id, source.internal_typeid)
-        OUTPUT INSERTED._id;
-        """        
+        select_sql = """
+            SELECT _id FROM cat_external_data
+            WHERE external_id = ? AND external_source_id = ? AND internal_id = ? AND internal_typeid = ?
+        """
         params = (
-        self.head.external_id,
-        self.head.external_source_id,
-        self.head._id,
-        self._db_head['table_typeid']
+            self.head.external_id,
+            self.head.external_source_id,
+            self.head._id,
+            self._db_head['table_typeid']
         )
         async with db_manager.get_transaction() as cursor:
-            await cursor.execute(sql, params)
-            inserted_id_row = await cursor.fetchone()        
+            await cursor.execute(select_sql, params)
+            row = await cursor.fetchone()
+            if row:
+                return row[0]
+
+        insert_sql = """
+            INSERT INTO cat_external_data (external_id, external_source_id, internal_id, internal_typeid)
+            OUTPUT INSERTED._id
+            VALUES (?, ?, ?, ?)
+        """
+        async with db_manager.get_transaction() as cursor:
+            await cursor.execute(insert_sql, params)
+            inserted_id_row = await cursor.fetchone()
             inserted_id = inserted_id_row[0] if inserted_id_row else None
             return inserted_id
         

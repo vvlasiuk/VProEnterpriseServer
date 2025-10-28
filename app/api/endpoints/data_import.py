@@ -10,7 +10,7 @@ import json
 from app.models.models_catalog.cat_products_brands import Cat_ProductBrand
 from app.services.excel_import_service import ExcelImportService
 from app.services.table_import_schema_service import TableImportSchemaService
-from app.services.external_mapping_service import ExternalMappingService
+# from app.services.DEL_external_mapping_service import ExternalMappingService
 from app.services.enumeration_service import EnumerationService
 from app.core.security import get_current_user
 from app.db.database import db_manager
@@ -22,7 +22,7 @@ router = APIRouter()
 # Initialize services
 excel_service = ExcelImportService()
 schema_service = TableImportSchemaService()
-mapping_service = ExternalMappingService()
+mapping_service = None  # ExternalMappingService()
 enum_service = EnumerationService()
 
 @router.get("/tables", response_model=List[str])
@@ -322,13 +322,10 @@ def get_import_config(import_type: str):
 async def import_brands_data(
     task_id: str,
     brands_data: List[Dict],
-    table_schema: Dict,
-    column_mapping: Dict[str, str],
     source_id: int,
-    batch_size: int,
-    user_id: int, db_manager=db_manager
+    user_id: int
 ):
-    """Імпорт брендів у базу даних"""
+    
     try:
         logger.info(f"Starting brands import task {task_id}")
 
@@ -338,66 +335,8 @@ async def import_brands_data(
         #     table_schema,
         #     column_mapping
         # )
-        # if not validation_result['valid']:
-        #     logger.error(f"Brands data validation failed: {validation_result['errors']}")
-        #     return
-        rows = brands_data['data']
-        selected_rows = [
-            {
-                'Name': row.get('Name'),
-                'Mark_deleted': row.get('Mark_deleted'),
-                'External_ID': row.get('External_ID'),
-                'created_by': row.get('created_by', None)
-            }
-            for row in rows if 'Name' in row or 'Mark_deleted' in row
-        ]
 
-        for row in selected_rows:
-            row['Mark_deleted'] = mark_deleted_to_bit(row.get('Mark_deleted'))
-            row['created_by'] = user_id
-
-        for row in selected_rows:
-
-            brand = await Cat_ProductBrand.get_by_external_id(row.get('External_ID'), source_id)
-
-            if brand:
-                # Оновлення існуючого запису
-                brand.head.name = row.get('Name')
-                brand.head.mark_deleted = row.get('Mark_deleted', 0)
-            else:
-                brand = Cat_ProductBrand.new()
-                brand.head.name = row.get('Name')
-                brand.head.mark_deleted = row.get('Mark_deleted', 0)
-                brand.head._created_by = user_id
-                brand.head.external_id = row.get('External_ID', None)
-                brand.head.external_source_id = source_id
-            await brand.save()
-
-        # # Імпорт порціями
-        # import_result = await excel_service.import_data_batch(
-        #     selected_rows,
-        #     "cat_products_brands",  # назва таблиці для брендів
-        #     batch_size, db_manager=db_manager
-        # )
-
-        # # Створення зовнішніх мапінгів
-        # if import_result['success'] and import_result.get('imported_records'):
-        #     await create_external_mappings(
-        #         source_id,
-        #         "cat_products_brands",
-        #         import_result['imported_records'],
-        #         brands_data,
-        #         column_mapping
-        #     )
-
-        # logger.info(f"Completed brands import task {task_id}: {import_result['imported']} records imported")
+        await Cat_ProductBrand.import_from_rows(brands_data['data'], source_id, user_id) 
 
     except Exception as e:
         logger.error(f"Error in brands import task {task_id}: {e}")
-
-def mark_deleted_to_bit(value):
-    if value is None or str(value).strip() == '':
-        return 0
-    if str(value).strip() in ['0', 'false', 'no']:
-        return 0
-    return 1

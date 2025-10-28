@@ -1,4 +1,6 @@
+from fastapi.params import Depends
 from app.db.database import db_manager
+from app.core.security import get_current_user
 
 class Catalog:
     _db_head = {"table_name": None, "table_typeid": None, "columns": ["name", "mark_deleted", "_created_by"]}
@@ -47,11 +49,14 @@ class Catalog:
             inserted_id_row = await cursor.fetchone()
             inserted_id = inserted_id_row[0] if inserted_id_row else None
             return inserted_id
-        
-    async def save(self):
+
+    async def save(self, user_id: int = None):
         data = {col: getattr(self.head, col) for col in self._db_head["columns"]}
         
         if self.head._id is None:
+
+            data['_created_by'] = user_id 
+
             columns = ', '.join(data.keys())
             placeholders = ', '.join(['?'] * len(data))
             sql = f"INSERT INTO {self._db_head['table_name']} ({columns}) OUTPUT INSERTED._id VALUES ({placeholders})"

@@ -1,5 +1,6 @@
 from app.models.models_catalog.catalog import Catalog
 from app.models.models_catalog.catalog_schemas_dto import CatalogProductBrandDTO
+from app.utils.converters import value_to_bool_bit
 
 class Cat_ProductBrand(Catalog):
     _DTO = CatalogProductBrandDTO
@@ -18,37 +19,32 @@ class Cat_ProductBrand(Catalog):
         self.head: CatalogProductBrandDTO = None
         self.table_one: CatalogProductBrandDTO = None  
         self.table_two: CatalogProductBrandDTO = None
+
+    @classmethod
+    def import_from_rows_prepare(rows: list):
+        for row in rows:
+            row['Mark_deleted'] = value_to_bool_bit(row.get('Mark_deleted'))
     
-    # @classmethod
-    # def new(cls):
-    #     obj = cls()
-    #     obj.head = CatalogProductBrandDTO()
-    #     obj.table_one = CatalogProductBrandDTO()
-    #     obj.table_two = CatalogProductBrandDTO()
+    @classmethod
+    async def import_from_rows(cls, rows: list, source_id: int, user_id: int):
         
-    #     return obj
-    
-    # @classmethod
-    # async def get_by_id(cls, item_id):
-    #     row_dict = await super().get_by_id(item_id)
-    #     if row_dict:
-    #         obj = cls()
-    #         # Заповнюємо head через дата-клас
-    #         obj.head = CatalogProductBrandDTO(**row_dict)
-    #         return obj
-    #     return None
+        cls.import_from_rows_prepare(rows)
 
-    # @classmethod
-    # async def get_by_external_id(cls, external_id: str, source_id: int):
-    #     row_dict = await super().get_by_external_id(external_id, source_id)
-    #     if row_dict:
-    #         obj = cls()
-    #         # Заповнюємо head через дата-клас
-    #         # obj.head = CatalogProductBrandDTO(**row_dict)
-    #         obj.head = obj._DTO(**row_dict)
-    #         return obj
-    #     return None
+        result = []
+        for row in rows:
+            brand = await cls.get_by_external_id(row.get('External_ID'), source_id)
+            if brand:
+                brand.head.name = row.get('Name')
+                brand.head.mark_deleted = row.get('Mark_deleted', 0)
+            else:
+                brand = cls.new()
+                brand.head.name = row.get('Name')
+                brand.head.mark_deleted = row.get('Mark_deleted', 0)
+                brand.head.external_id = row.get('External_ID', None)
+                brand.head.external_source_id = source_id
 
-    # @classmethod
-    # async def get_head_typeid(cls):
-    #     return await super().get_head_typeid(cls._db_head["table_name"])
+            await brand.save(user_id=user_id)
+            result.append(brand)
+
+        return result
+

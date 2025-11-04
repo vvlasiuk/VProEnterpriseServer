@@ -9,7 +9,7 @@ def test_auth():
     # 1. Логін
     login_url = f"{base_url}/api/v1/auth/login"
     login_data = {
-        "username": "Administrator",
+        "username": "Admin",
         "password": "admin"
     }
     

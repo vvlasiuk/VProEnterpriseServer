@@ -6,11 +6,11 @@ from app.services.database_service import DatabaseService
 
 router = APIRouter()
 
-# Заглушка даних
-MOCK_USERS = [
-    {"id": 1, "name": "John Doe", "email": "john@example.com", "created_at": "2024-01-01T10:00:00"},
-    {"id": 2, "name": "Jane Smith", "email": "jane@example.com", "created_at": "2024-01-02T10:00:00"},
-]
+# # Заглушка даних
+# MOCK_USERS = [
+#     {"id": 1, "name": "John Doe", "email": "john@example.com", "created_at": "2024-01-01T10:00:00"},
+#     {"id": 2, "name": "Jane Smith", "email": "jane@example.com", "created_at": "2024-01-02T10:00:00"},
+# ]
 
 @router.get("/")
 async def get_users():
@@ -19,10 +19,10 @@ async def get_users():
         # SQL запит для отримання користувачів
         query = """
         SELECT 
-            id,
+            _id,
             name,
             full_name
-        FROM users 
+        FROM cat_users 
         WHERE is_active = 1
         ORDER BY full_name
         """
@@ -34,7 +34,7 @@ async def get_users():
         users = []
         for row in users_data:
             user = {
-                "id": row["id"],
+                "id": row["_id"],
                 "name": row["name"],
                 "full_name": row["full_name"]
             }
@@ -49,9 +49,9 @@ async def get_users():
     except Exception as e:
         # Fallback на MOCK дані якщо БД недоступна
         return {
-            "users": MOCK_USERS,
-            "total": len(MOCK_USERS),
-            "source": "mock",
+            "users": None,
+            "total": 0,
+            # "source": "mock",
             "error": str(e)
         }
 

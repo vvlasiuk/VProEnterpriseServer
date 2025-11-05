@@ -66,14 +66,14 @@ def hash_password(password: str) -> str:
         return hashlib.sha256(password.encode()).hexdigest()
 
 # Замінити authenticate_user на БД
-async def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
+async def authenticate_user(user_id: int, password: str) -> Optional[Dict[str, Any]]:
     """Check user in database"""
     query = """
     SELECT _id, name, full_name,email, password_hash, is_admin, is_active
     FROM cat_users
-    WHERE (name = ? OR email = ?) AND is_active = 1
+    WHERE _id = ? AND is_active = 1
     """
-    users = await DatabaseService.execute_query(query, (username, username))
+    users = await DatabaseService.execute_query(query, (user_id))
     if not users:
         return None
     user = users[0]

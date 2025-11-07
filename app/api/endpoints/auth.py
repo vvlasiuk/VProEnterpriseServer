@@ -60,12 +60,14 @@ async def login(credentials: Dict[str, str]):
 async def get_me(current_user: Dict = Depends(get_current_user)):
     """Отримати інформацію про поточного користувача"""
     return {
-        "username": current_user["username"],
-        "role": current_user["role"],
-        "active": current_user["active"]
+        "_id": current_user["_id"],
+        "name": current_user["name"],
+        "full_name": current_user["full_name"],
+        "is_admin": current_user["is_admin"],
+        "is_active": current_user["is_active"]
     }
 
 @router.post("/logout")
 async def logout(current_user: Dict = Depends(get_current_user)):
     """Вихід з системи (заглушка)"""
-    return {"message": f"User {current_user['username']} logged out successfully"}
+    return {"message": f"User {current_user['name']} logged out successfully"}

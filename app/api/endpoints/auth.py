@@ -71,3 +71,7 @@ async def get_me(current_user: Dict = Depends(get_current_user)):
 async def logout(current_user: Dict = Depends(get_current_user)):
     """Вихід з системи (заглушка)"""
     return {"message": f"User {current_user['name']} logged out successfully"}
+
+@router.get("/protected")
+async def protected_route(current_user: dict = Depends(get_current_user)):
+    return {"status": 1, "_id": current_user["_id"]}

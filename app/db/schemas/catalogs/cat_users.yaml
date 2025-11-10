@@ -10,12 +10,10 @@ tables:
       full_name:
         type: "NVARCHAR(50)"
         nullable: false
-        unique: true
         comment: "Повне ім'я користувача"
       email:
         type: "NVARCHAR(100)"
         nullable: false
-        unique: true
         comment: "Email адреса"
       password_hash:
         type: "NVARCHAR(255)"

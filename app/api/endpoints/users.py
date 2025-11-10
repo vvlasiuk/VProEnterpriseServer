@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict
 from datetime import datetime
-from app.core.security import get_current_user, require_admin_role
+from app.core.security import get_current_user, require_admin_role, hash_password
 from app.services.database_service import DatabaseService
 
 router = APIRouter()
@@ -66,23 +66,39 @@ async def get_user(user_id: int, current_user: Dict = Depends(get_current_user))
         )
     return user
 
-@router.post("/")
+@router.post("/create_user")
 async def create_user(
     user_data: Dict, 
     current_user: Dict = Depends(get_current_user)
 ):
     """Створити користувача (тільки для адмінів)"""
-    require_admin_role(current_user)
-    
-    new_user = {
-        "_id": len(MOCK_USERS) + 1,
-        "_name": user_data.get("name", "Unknown"),
-        "email": user_data.get("email", "unknown@example.com"),
-        "_created_at": datetime.utcnow().isoformat(),
-        "_created_by": current_user["username"]
-    }
-    MOCK_USERS.append(new_user)
-    return new_user
+    # require_admin_role(current_user)
+
+    # Перевірка унікальності name/full_name/email за потреби
+
+    password_hash = hash_password(user_data.get("password", ""))
+
+    query = """
+    INSERT INTO cat_users (name, full_name, email, password_hash, is_active, is_admin, _created_at, _created_by)
+    VALUES (?, ?, ?, ?, ?, ?, GETDATE(), ?)
+    """
+    params = (
+        user_data.get("name", ""),
+        user_data.get("full_name", ""),
+        user_data.get("email", ""),
+        password_hash,
+        True,
+        user_data.get("is_admin", False),
+        current_user["_id"]
+    )
+    await DatabaseService.execute_non_query(query, params)
+
+    # Отримати створеного користувача (наприклад, за name)
+    select_query = "SELECT _id, name, full_name, email FROM cat_users WHERE name = ?"
+    result = await DatabaseService.execute_query(select_query, (user_data.get("name", ""),))
+    if not result:
+        raise HTTPException(status_code=500, detail="User creation failed")
+    return result[0]
 
 @router.delete("/{user_id}")
 async def delete_user(

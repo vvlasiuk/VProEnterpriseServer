@@ -22,7 +22,7 @@ tables:
       table_name:
         type: "NVARCHAR(250)"
         nullable: false
-        comment: "Назва таблиці в БД (cat_products, cat_users)"
+        comment: "Назва таблиці в БД (cat_products, sys_users)"
       
       # Налаштування
       is_active:

@@ -70,7 +70,7 @@ async def authenticate_user(user_id: int, password: str) -> Optional[Dict[str, A
     """Check user in database"""
     query = """
     SELECT _id, name, full_name,email, password_hash, is_admin, is_active
-    FROM cat_users
+    FROM sys_users
     WHERE _id = ? AND is_active = 1
     """
     users = await DatabaseService.execute_query(query, (user_id))
@@ -94,7 +94,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     token = credentials.credentials
     payload = verify_token(token)
     user_id = payload.get("user_id")
-    query = "SELECT * FROM cat_users WHERE _id = ? AND is_active = 1"
+    query = "SELECT * FROM sys_users WHERE _id = ? AND is_active = 1"
     users = await DatabaseService.execute_query(query, (user_id,))
     if not users:
         raise HTTPException(status_code=401, detail="User not found")

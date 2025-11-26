@@ -3,8 +3,8 @@ version: "1.0.0"
 
 tables:
   # Користувачі системи
-  cat_users:
-    parent: "catalog"
+  sys_users:
+    parent: "system"
     description: "Users"
     columns:
       full_name:
@@ -42,7 +42,7 @@ tables:
         unique: true
 
   # Зв'язок користувачів і ролей
-  cat_user_roles:
+  sys_user_roles:
     description: "user_roles"
     columns:
       id:
@@ -52,12 +52,12 @@ tables:
       user_id:
         type: "BIGINT"
         nullable: false
-        foreign_key: "cat_users.id"
+        foreign_key: "sys_users.id"
         comment: "Користувач"
       role_id:
         type: "BIGINT"
         nullable: false
-        foreign_key: "cat_roles.id"
+        foreign_key: "sys_roles.id"
         comment: "Роль"
       assigned_at:
         type: "DATETIME2"
@@ -66,7 +66,7 @@ tables:
       assigned_by:
         type: "BIGINT"
         nullable: false
-        foreign_key: "cat_users.id"
+        foreign_key: "sys_users.id"
         comment: "Хто призначив"
     indexes:
       - name: "IX_user_roles_user_role"

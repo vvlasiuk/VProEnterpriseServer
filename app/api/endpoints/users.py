@@ -22,7 +22,7 @@ async def get_users():
             _id,
             name,
             full_name
-        FROM cat_users 
+        FROM sys_users 
         WHERE is_active = 1
         ORDER BY full_name
         """
@@ -79,7 +79,7 @@ async def create_user(
     password_hash = hash_password(user_data.get("password", ""))
 
     query = """
-    INSERT INTO cat_users (name, full_name, email, password_hash, is_active, is_admin, _created_at, _created_by)
+    INSERT INTO sys_users (name, full_name, email, password_hash, is_active, is_admin, _created_at, _created_by)
     VALUES (?, ?, ?, ?, ?, ?, GETDATE(), ?)
     """
     params = (
@@ -94,7 +94,7 @@ async def create_user(
     await DatabaseService.execute_non_query(query, params)
 
     # Отримати створеного користувача (наприклад, за name)
-    select_query = "SELECT _id, name, full_name, email FROM cat_users WHERE name = ?"
+    select_query = "SELECT _id, name, full_name, email FROM sys_users WHERE name = ?"
     result = await DatabaseService.execute_query(select_query, (user_data.get("name", ""),))
     if not result:
         raise HTTPException(status_code=500, detail="User creation failed")

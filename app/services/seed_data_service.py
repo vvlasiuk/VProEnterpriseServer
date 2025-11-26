@@ -41,7 +41,7 @@ class SeedDataService:
     async def seed_users(self):
         """Створити адміністратора якщо немає користувачів"""
         # Перевірити чи є користувачі
-        count_query = "SELECT COUNT(*) FROM cat_users"
+        count_query = "SELECT COUNT(*) FROM sys_users"
         user_count = await DatabaseService.execute_scalar(count_query)
         
         if user_count == 0:
@@ -75,7 +75,7 @@ class SeedDataService:
     async def _insert_user(self, user_data: dict):
         """Вставити користувача в БД"""
         query = """
-        INSERT INTO cat_users (name, full_name, email, password_hash, is_active, is_admin, _created_at)
+        INSERT INTO sys_users (name, full_name, email, password_hash, is_active, is_admin, _created_at)
         VALUES (?, ?, ?, ?, ?, ?, GETDATE())
         """
         

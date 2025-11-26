@@ -3,12 +3,12 @@ from datetime import datetime
 from app.core.config import settings
 from app.core.server_setup import get_ssl_config
 from app.services.database_service import DatabaseService
+import sys
 
 router = APIRouter()
 
 @router.get("/")
 async def health_check():
-    """Health check для MS SQL (заглушка)"""
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow(),
@@ -23,7 +23,6 @@ async def health_check():
 
 @router.get("/db")
 async def health_check_db():
-    """Детальна перевірка MS SQL (заглушка)"""
     try:
         result = await DatabaseService.execute_scalar("SELECT 1")
         return {
@@ -57,3 +56,26 @@ async def ssl_status():
             "SSL_CERTFILE": getattr(settings, 'SSL_CERTFILE', None)
         }
     }
+
+@router.get("/db_empty")
+async def db_empty():
+    sys_tables = [
+        'sys_users'
+    ]
+    missing_tables = []
+    try:
+        for table in sys_tables:
+            check_sql = f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{table}'"
+            count = await DatabaseService.execute_scalar(check_sql)
+            if count == 0:
+                missing_tables.append(table)
+        is_empty = len(missing_tables) == len(sys_tables)
+        return {
+            "db_empty": is_empty,
+            "missing_sys_tables": missing_tables
+        }
+    except Exception as e:
+        return {
+            "db_empty": None,
+            "error": str(e)
+        }

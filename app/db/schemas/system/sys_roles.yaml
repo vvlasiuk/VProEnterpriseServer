@@ -3,9 +3,9 @@ version: "1.0.0"
 
 tables:
   # Ролі користувачів
-  cat_roles:
-    parent: "catalog"
+  sys_roles:
     description: "Roles"
+    parent: "system"
     columns:
       permissions:
         type: "NTEXT"

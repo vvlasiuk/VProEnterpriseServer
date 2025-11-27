@@ -3,7 +3,9 @@ from datetime import datetime
 from app.core.config import settings
 from app.core.server_setup import get_ssl_config
 from app.services.database_service import DatabaseService
-import sys
+# import sys
+from fastapi import Body
+
 
 router = APIRouter()
 
@@ -16,8 +18,7 @@ async def health_check():
         "database": {
             "type": "MS SQL Server",
             "server": settings.DB_SERVER,
-            "database": settings.DB_DATABASE,
-            "status": "mock_connection_ok"
+            "database": settings.DB_DATABASE            
         }
     }
 
@@ -79,3 +80,18 @@ async def db_empty():
             "db_empty": None,
             "error": str(e)
         }
+    
+@router.post("/db_create_table")
+async def db_create_table():
+
+    from app.db.migration_service import MigrationService
+    from app.db.database import db_manager
+
+    try:
+        await db_manager.create_pool()
+        migration_service = MigrationService()
+        results = await migration_service.create_all_tables()
+        return results
+    except Exception as e:
+        await db_manager.close_pool()
+        return {"error": str(e)}

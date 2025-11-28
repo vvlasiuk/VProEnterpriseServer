@@ -50,7 +50,7 @@ class SeedDataService:
                 "name": "Admin",
                 "full_name": "System Administrator",
                 "email": "",
-                "password_hash": self._hash_password("admin"),
+                "password_hash": self._hash_password("VPE_Admin_777"),
                 "is_active": True,
                 "is_admin": True,
                 "_created_at": "GETDATE()",

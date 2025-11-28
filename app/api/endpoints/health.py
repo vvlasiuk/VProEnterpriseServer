@@ -83,14 +83,20 @@ async def db_empty():
     
 @router.post("/db_create_table")
 async def db_create_table():
-
     from app.db.migration_service import MigrationService
     from app.db.database import db_manager
+    from app.services.seed_data_service import SeedDataService
 
     try:
         await db_manager.create_pool()
         migration_service = MigrationService()
         results = await migration_service.create_all_tables()
+        # Якщо таблиці створено без критичних помилок, запускаємо seed
+        if not results.get("errors"):
+            seed_service = SeedDataService()
+            seed_results = await seed_service.seed_all_data()
+            results["seed"] = seed_results
+        await db_manager.close_pool()
         return results
     except Exception as e:
         await db_manager.close_pool()

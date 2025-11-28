@@ -1,7 +1,7 @@
 # Батьківські таблиці для наслідування
 parent_tables:
   
-  catalog:
+  system:
     _id:
       type: "BIGINT"
       primary_key: true

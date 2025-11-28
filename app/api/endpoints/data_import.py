@@ -7,7 +7,7 @@ from io import BytesIO
 import asyncio
 import json
 
-from app.models.models_catalog.cat_products_brands import Cat_ProductBrand
+from app.models.models_catalog.Cat_ProductBrand import Cat_ProductBrand
 from app.services.excel_import_service import ExcelImportService
 from app.services.table_import_schema_service import TableImportSchemaService
 # from app.services.DEL_external_mapping_service import ExternalMappingService

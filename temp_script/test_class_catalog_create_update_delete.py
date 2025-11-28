@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + "/.."))
-from app.models.models_catalog.cat_products_brands import Cat_ProductBrand
+from app.models.models_catalog.Cat_ProductBrand import Cat_ProductBrand
 from app.models.models_catalog.cat_external_source import Cat_ExternalSource
 # from app.models.models_catalog.cat_external_data_dto import Cat_ExternalData
 from app.db.database import db_manager

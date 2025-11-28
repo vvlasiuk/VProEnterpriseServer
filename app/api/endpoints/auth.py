@@ -13,7 +13,6 @@ router = APIRouter()
 
 @router.post("/login")
 async def login(credentials: Dict[str, str]):
-    """Авторизація користувача (заглушка)"""
     username = credentials.get("username")
     password = credentials.get("password")
     

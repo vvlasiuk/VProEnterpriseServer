@@ -148,15 +148,15 @@ async def import_excel_file(
             # task_ids.append(task_id)
 
             if table_name == "cat_products_brands":
-                brands_schema = schema_service.get_table_import_info(table_name)
+                # brands_schema = schema_service.get_table_import_info(table_name)
                 background_tasks.add_task(
                     import_brands_data,
                     task_id=task_id,
                     brands_data=excel_data,
-                    table_schema=brands_schema,
-                    column_mapping=column_mapping,
+                    # table_schema=brands_schema,
+                    # column_mapping=column_mapping,
                     source_id=source_id,
-                    batch_size=batch_size,
+                    # batch_size=batch_size,
                     user_id=current_user['_id']
                 )
 
@@ -173,7 +173,7 @@ async def import_excel_file(
         logger.error(f"Error starting Excel import: {e}")
         raise HTTPException(status_code=500, detail="Failed to start import")
 
-async def process_excel_import(
+async def DEL_process_excel_import(
     task_id: str,
     excel_data: Dict,  # приймаємо вже оброблені дані
     table_name: str,

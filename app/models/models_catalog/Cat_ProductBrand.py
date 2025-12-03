@@ -21,7 +21,7 @@ class Cat_ProductBrand(Catalog):
         self.table_two: CatalogProductBrandDTO = None
 
     @classmethod
-    def import_from_rows_prepare(rows: list):
+    def import_from_rows_prepare(cls, rows: list):
         for row in rows:
             row['Mark_deleted'] = value_to_bool_bit(row.get('Mark_deleted'))
     

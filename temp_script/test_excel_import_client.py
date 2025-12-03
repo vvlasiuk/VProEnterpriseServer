@@ -32,7 +32,7 @@ class ExcelImportClient:
             }
         }
 
-    def authenticate(self, username: str = "test", password: str = "test123"):
+    def authenticate(self, username: str = "admin", password: str = "test123"):
         """Authenticate user"""
         print("🔐 Authentication...")
         
@@ -121,7 +121,7 @@ class ExcelImportClient:
         print("="*60)
         
         # 1. Authentication
-        if not self.authenticate(username="Admin", password="admin"):
+        if not self.authenticate(username="admin", password="VPE_Admin_777"):
             print("❌ Test terminated due to authentication error")
             return
         
@@ -147,7 +147,7 @@ def main():
     # Create client
     client = ExcelImportClient(base_url="http://localhost:8000")
     
-    tables_to_test = [['products_brands_import', 'C:\\Python\\temp data\\Sales\\Brands.xlsx']] 
+    tables_to_test = [['products_brands_import', 'C:\\Vlas Pro Enterprise\\temp data\\Import\\Sales\\Brands.xlsx']] 
 
     client.run_full_test(tables_to_test)
     

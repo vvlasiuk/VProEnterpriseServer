@@ -424,10 +424,10 @@ class SchemaManager:
         from pathlib import Path
         
         # Папка з моделями
-        models_dir = Path(settings.BASE_DIR) / 'app' / 'models'
-        
+        # models_dir = Path(settings.BASE_DIR) / 'app' / 'models'
+        models_dir = Path(__file__).parent.parent.parent / 'app' / 'models'        
         # Знаходимо всі Python файли
-        for model_file in models_dir.glob('*.py'):
+        for model_file in models_dir.glob('**/*.py'):
             if model_file.name.startswith('_'):
                 continue
             

@@ -1,6 +1,7 @@
 from app.models.models_catalog.catalog import Catalog
 from app.models.models_catalog.catalog_schemas_dto import CatalogProductBrandDTO
 from app.utils.converters import value_to_bool_bit
+from typing import Dict
 
 class Cat_ProductBrand(Catalog):
     _DTO = CatalogProductBrandDTO
@@ -48,3 +49,9 @@ class Cat_ProductBrand(Catalog):
 
         return result
 
+    def get_db_head_structure() -> Dict:
+        structure =  Catalog.get_db_head_structure()
+        structure['table_name'] = "cat_products_brands"
+        structure['description'] = "Бренди товарів"
+
+        return structure

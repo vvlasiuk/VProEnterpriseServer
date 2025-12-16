@@ -1,6 +1,7 @@
 from fastapi.params import Depends
 from app.db.database import db_manager
 from app.core.security import get_current_user
+from typing import Dict, Any
 
 class Catalog:
     _db_head = {"table_name": None, "table_typeid": None, "columns": ["name", "mark_deleted", "_created_by"]}
@@ -139,6 +140,54 @@ class Catalog:
             if row:
                 return row.id
             return None
+
+    # @classmethod
+    def get_db_head_structure() -> Dict:
+        """Повертає структуру таблиці БД"""
+        return {
+            'table_name': '',
+            'description': '',
+            'columns': {                
+                '_id': {
+                    'description': 'УІ', 
+                    'comment': 'Унікальний ідентифікатор',
+                    'type': 'BIGINT',
+                    'primary_key': True,
+                    'auto_increment': True,
+                    'nullable': False,
+                    'unique': True,
+                    'default': None,
+                    'foreign_key': None
+                },
+                'name': {
+                    'description': 'Назва',
+                    'type': 'NVARCHAR(150)',
+                    'nullable': False,
+                    },
+                '_version': {
+                    'description': 'Версія запису для контролю конкурентного доступу',
+                    'type': 'ROWVERSION',
+                    'nullable': False
+                },
+                '_created_at': {
+                    'description': 'Дата та час створення запису',
+                    'type': "DATETIME2",
+                    'nullable': True,
+                    'default': "GETDATE()"
+                },
+                '_created_by': {
+                    'description': 'Ідентифікатор користувача, який створив запис',
+                    'type': "BIGINT",
+                    'nullable': True,
+                    'foreign_key': 'sys_users._id'
+                },
+                'mark_deleted': {
+                    'description': 'Позначка видалення',
+                    'type': 'BIT',
+                    'default': 0
+                }
+            }
+        }
 
 # async def get_all(self):
     #     sql = f"SELECT * FROM {self._db_head['table_name']}"

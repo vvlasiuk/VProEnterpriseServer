@@ -1,3 +1,4 @@
+from ast import Dict
 from app.models.models_catalog.catalog import Catalog
 from app.models.models_catalog.catalog_schemas_dto import CatalogExternalSourceDTO
 
@@ -27,6 +28,24 @@ class Cat_ExternalSource(Catalog):
             return obj
         return None
 
-    # @classmethod
-    # async def get_head_typeid(cls):
-    #     return await super().get_head_typeid(cls._db_head["table_name"])
+    def get_db_head_structure() -> Dict:
+        structure = Catalog.get_db_head_structure()
+        structure['table_name'] = "cat_external_sources"
+        structure['description'] = "Зовнішні джерела даних"
+        
+        # Додаємо власні колонки
+        structure['columns'].update({
+            'is_active': {
+                'description': 'Активне джерело',
+                'type': 'BIT',
+                'nullable': False,
+                'default': 1
+            },
+            'last_sync_at': {
+                'description': 'Дата останньої синхронізації',
+                'type': 'DATETIME2',
+                'nullable': True
+            }
+        })
+        
+        return structure

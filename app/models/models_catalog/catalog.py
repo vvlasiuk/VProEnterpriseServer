@@ -147,9 +147,13 @@ class Catalog:
         return {
             'table_name': '',
             'description': '',
+            'disabled': False,
+            'deleted': False,
             'columns': {                
                 '_id': {
                     'description': 'УІ', 
+                    'disabled': False,
+                    'deleted': False,
                     'comment': 'Унікальний ідентифікатор',
                     'type': 'BIGINT',
                     'primary_key': True,

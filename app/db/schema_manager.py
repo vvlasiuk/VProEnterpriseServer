@@ -19,7 +19,7 @@ class SchemaManager:
         self.resolved_tables: Dict[str, Dict] = {}
         self._loaded = False
     
-    def load_all_schemas(self):
+    def load_all_schemas_jaml(self):
         """Завантажити всі схеми з усіх тек"""
         schema_files = self.discover_schema_files()
         
@@ -416,3 +416,43 @@ class SchemaManager:
             'version': '1.0.0',
             'table_definition': {}
         }
+    
+    def load_all_schemas(self) -> None:
+        """Завантажити схеми з методів get_db_head_structure() класів моделей"""
+        import importlib
+        import inspect
+        from pathlib import Path
+        
+        # Папка з моделями
+        models_dir = Path(settings.BASE_DIR) / 'app' / 'models'
+        
+        # Знаходимо всі Python файли
+        for model_file in models_dir.glob('*.py'):
+            if model_file.name.startswith('_'):
+                continue
+            
+            try:
+                # Імпортуємо модуль
+                module_name = f"app.models.models_catalog.{model_file.stem}"
+                module = importlib.import_module(module_name)
+                
+                # Знаходимо всі класи в модулі
+                for name, obj in inspect.getmembers(module, inspect.isclass):
+                    # Перевіряємо, що це наш клас з методом get_db_head_structure
+                    if hasattr(obj, 'get_db_head_structure') and obj.__module__ == module_name:
+                        try:
+                            # Викликаємо метод для отримання структури
+                            structure = obj.get_db_head_structure()
+                            
+                            table_name = structure.get('table_name')
+                            if table_name:
+                                self.resolved_tables[table_name] = structure
+                                logger.info(f"Loaded schema for {table_name} from {name}")
+                        except Exception as e:
+                            logger.error(f"Failed to load schema from {name}: {e}")
+        
+            except ImportError as e:
+                logger.debug(f"Could not import {module_name}: {e}")
+        
+        self._loaded = True
+        logger.info(f"Loaded {len(self.resolved_tables)} schemas from model classes")

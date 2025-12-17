@@ -29,7 +29,7 @@ async def db_schemas(current_user = Depends(get_current_user)) -> Dict[str, Any]
         migration_service = MigrationService()
         db_info = await migration_service.get_database_info()
  
-        result = {
+        return {
             "status": "success",
             "count": len(db_info["existing_tables"]),
             "schemas": db_info["existing_tables"]
@@ -49,10 +49,10 @@ async def compare_schemas(current_user = Depends(get_current_user)) -> Dict[str,
         # result["missing_tables"] = db_info["missing_tables"]
         return {
             "status": "success",
-            "count_changes_planned": len(result.changes_planned),
-            "changes_planned": result.changes_planned,
-            "count_errors": len(result.errors),
-            "errors": result.errors
+            "count_changes_planned": len(result["changes_planned"]),
+            "changes_planned": result["changes_planned"],
+            "count_errors": len(result["errors"]),
+            "errors": result["errors"]
         }
         
         # return result

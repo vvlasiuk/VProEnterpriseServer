@@ -53,5 +53,6 @@ class Cat_ProductBrand(Catalog):
         structure =  Catalog.get_db_head_structure()
         structure['table_name'] = "cat_products_brands"
         structure['description'] = "Бренди товарів"
+        structure['subsystem'] = "products"
 
         return structure

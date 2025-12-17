@@ -147,6 +147,8 @@ class Catalog:
         return {
             'table_name': '',
             'description': '',
+            'subsystem': '',
+            'plugin': '',
             'disabled': False,
             'deleted': False,
             'columns': {                

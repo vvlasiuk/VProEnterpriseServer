@@ -13,7 +13,8 @@ class Cat_ExternalData(Catalog):
         return {
             'table_name': 'cat_external_data',
             'description': 'Звязок з зовнішніми даними',
-            'columns': {                
+            'subsystem': 'import_export',
+            'columns': {                    
                 '_id': {
                     'description': 'УІ', 
                     'comment': 'Унікальний ідентифікатор',

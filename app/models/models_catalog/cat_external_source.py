@@ -32,6 +32,7 @@ class Cat_ExternalSource(Catalog):
         structure = Catalog.get_db_head_structure()
         structure['table_name'] = "cat_external_sources"
         structure['description'] = "Зовнішні джерела даних"
+        structure['subsystem'] = "import_export"
         
         # Додаємо власні колонки
         structure['columns'].update({

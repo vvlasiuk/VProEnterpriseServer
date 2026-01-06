@@ -13,7 +13,8 @@ async def get_model_schemas(current_user = Depends(get_current_user)) -> Dict[st
     """Отримати схеми з методів get_db_head_structure() моделей"""
     try:
         schema_manager = SchemaManager()
-        schema_manager.load_all_schemas()
+        # schema_manager.load_all_schemas()
+        schema_manager.load_all_schemas_yaml()
         
         return {
             "status": "success",
@@ -42,19 +43,22 @@ async def compare_schemas(current_user = Depends(get_current_user)) -> Dict[str,
     """Порівняти схеми моделей з поточною структурою БД"""
     try:
         migration_service = MigrationService()
+        
+        # Отримати інформацію про БД і схеми
+        db_info = await migration_service.get_database_info()
+        
+        # Порівняти існуючі таблиці
         result = await migration_service.update_existing_tables(dry_run=True)
         
-        # # Додати missing таблиці
-        # db_info = await migration_service.get_database_info()
-        # result["missing_tables"] = db_info["missing_tables"]
         return {
             "status": "success",
             "count_changes_planned": len(result["changes_planned"]),
             "changes_planned": result["changes_planned"],
+            "count_missing_tables": len(db_info["missing_tables"]),
+            "missing_tables": db_info["missing_tables"],
             "count_errors": len(result["errors"]),
             "errors": result["errors"]
         }
         
-        # return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -19,7 +19,7 @@ class SchemaManager:
         self.resolved_tables: Dict[str, Dict] = {}
         self._loaded = False
     
-    def load_all_schemas_jaml(self):
+    def load_all_schemas_yaml(self):
         """Завантажити всі схеми з усіх тек"""
         schema_files = self.discover_schema_files()
         
@@ -247,7 +247,7 @@ class SchemaManager:
     def get_all_tables(self) -> Dict[str, Dict]:
         """Отримати всі розв'язані таблиці"""
         if not self._loaded:
-            self.load_all_schemas()
+            self.load_all_schemas_yaml()
         return self.resolved_tables
     
     def get_table_creation_order(self) -> List[str]:

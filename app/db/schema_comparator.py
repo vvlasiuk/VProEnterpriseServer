@@ -78,6 +78,8 @@ class SchemaComparator:
             return 'BIGINT'
         elif data_type == 'NTEXT':
             return 'NTEXT'
+        elif data_type == 'TIMESTAMP':
+            return 'ROWVERSION'
         else:
             return data_type
     
@@ -120,6 +122,17 @@ class SchemaComparator:
         # Порівняти тип
         if db_def['type'] != yaml_def.get('type', 'NVARCHAR(255)'):
             return True
+
+        # db_type = db_def['type'].upper()
+        # yaml_type = yaml_def.get('type', 'NVARCHAR(255)').upper()
+
+        # if db_type == 'TIMESTAMP':
+        #     # Це один і той же тип, не вважати різницею
+        #     db_type = 'ROWVERSION'
+
+        # # Порівняти тип
+        # if db_type != yaml_type:
+        #     return True        
         
         # Порівняти nullable (PK завжди NOT NULL)
         if not yaml_def.get('primary_key', False):

@@ -159,7 +159,7 @@ class MigrationService:
         }
         
         try:
-            self.schema_manager.load_all_schemas()
+            self.schema_manager.load_all_schemas_yaml()
             resolved_tables = self.schema_manager.get_all_tables()
             
             comparator = SchemaComparator()

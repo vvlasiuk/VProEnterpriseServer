@@ -1,0 +1,4 @@
+-- Add brand_id column to cat_products
+-- ALTER TABLE cat_products ADD brand_id BIGINT NULL;
+-- ALTER TABLE cat_products ADD CONSTRAINT FK_products_brand 
+--     FOREIGN KEY (brand_id) REFERENCES cat_products_brands(id);

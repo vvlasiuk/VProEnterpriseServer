@@ -1,0 +1,52 @@
+version: "1.0.0"
+
+tables:
+  sys_parameters:
+    parent: "system"
+    description: "System configuration parameters with history tracking"
+    columns:
+      parameter_key:
+        type: "NVARCHAR(100)"
+        nullable: false
+        comment: "Parameter key"
+      
+      parameter_value:
+        type: "NVARCHAR(MAX)"
+        nullable: true
+        comment: "Parameter value as string (for primitive types)"
+      
+      parameter_type:
+        type: "NVARCHAR(50)"
+        nullable: false
+        default: "'string'"
+        comment: "Data type: string, int, decimal, bool, date, datetime, json, reference"
+      
+      reference_table:
+        type: "NVARCHAR(100)"
+        nullable: true
+        comment: "Table name for reference type"
+      
+      reference_id:
+        type: "BIGINT"
+        nullable: true
+        comment: "Record ID in referenced table"
+      
+      date_from:
+        type: "DATETIME2"
+        nullable: false
+        default: "GETDATE()"
+        comment: "Start date of parameter value validity"
+      
+      date_to:
+        type: "DATETIME2"
+        nullable: true
+        comment: "End date of parameter value validity (NULL = current/active)"
+      
+      description:
+        type: "NVARCHAR(500)"
+        nullable: true
+        comment: "Parameter description"
+      
+
+
+

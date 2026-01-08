@@ -24,14 +24,14 @@ class SchemaManager:
         schema_files = self.discover_schema_files()
         
         # Завантажити parent схеми
-        for parent_file in schema_files.get('parents', []):
-            self._load_parent_schema(parent_file)
+        # for parent_file in schema_files.get('parents', []):
+        #     self._load_parent_schema(parent_file)
         
         # Завантажити схеми таблиць (всі теки окрім parents)
-        for category in schema_files:
-            if category == 'parents':
-                continue  # parents вже завантажені вище
-            for schema_file in schema_files[category]:
+        for version in schema_files:
+            # if version == 'parents':
+            #     continue  # parents вже завантажені вище
+            for schema_file in schema_files[version]:
                 self._load_table_schema(schema_file)
         
         # ДОДАТИ: Розв'язати наслідування
@@ -301,22 +301,22 @@ class SchemaManager:
         
         return schema_files
     
-    def _load_parent_schema(self, file_path: str):
-        """Завантажити parent схему з файлу"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                data = yaml.safe_load(file)
-                if data and 'parent_tables' in data:
-                    parent_tables = data['parent_tables']
-                    if parent_tables:  # Перевірка на None
-                        self.parent_tables.update(parent_tables)
-                        logger.info(f"Loaded {len(parent_tables)} parent tables from {file_path}")
-                    else:
-                        logger.warning(f"Empty parent_tables in {file_path}")
-                else:
-                    logger.warning(f"No parent_tables found in {file_path}")
-        except Exception as e:
-            logger.error(f"Failed to load parent schema from {file_path}: {e}")
+    # def _load_parent_schema(self, file_path: str):
+    #     """Завантажити parent схему з файлу"""
+    #     try:
+    #         with open(file_path, 'r', encoding='utf-8') as file:
+    #             data = yaml.safe_load(file)
+    #             if data and 'parent_tables' in data:
+    #                 parent_tables = data['parent_tables']
+    #                 if parent_tables:  # Перевірка на None
+    #                     self.parent_tables.update(parent_tables)
+    #                     logger.info(f"Loaded {len(parent_tables)} parent tables from {file_path}")
+    #                 else:
+    #                     logger.warning(f"Empty parent_tables in {file_path}")
+    #             else:
+    #                 logger.warning(f"No parent_tables found in {file_path}")
+    #     except Exception as e:
+    #         logger.error(f"Failed to load parent schema from {file_path}: {e}")
 
     def _load_table_schema(self, file_path: str):
         """Завантажити схему таблиць з файлу"""
@@ -324,6 +324,11 @@ class SchemaManager:
             data = yaml.safe_load(file)
             if 'tables' in data:
                 self.tables.update(data['tables'])
+            elif 'parent_tables' in data:
+                # Якщо це файл з parent таблицями
+                parent_tables = data['parent_tables']
+                if parent_tables:  # Перевірка на None
+                    self.parent_tables.update(parent_tables)
     
     def generate_alter_commands(self, table_name: str, differences: Dict[str, List]) -> List[str]:
         """Згенерувати команди ALTER TABLE"""

@@ -11,8 +11,8 @@ from app.db.schema_manager import SchemaManager
 def main():
     schema_manager = SchemaManager()
     schema_files = schema_manager.load_all_schemas_yaml()
-    for file in schema_files:
-        print(file)
+    # for file in schema_files:
+    #     print(file)
 
 
 if __name__ == "__main__":

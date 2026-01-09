@@ -1,12 +1,95 @@
 import yaml
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TypedDict
 from pathlib import Path
 import logging
 from app.core.config import settings
+from dataclasses import dataclass, field
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class VersionData:
+    """Структура даних для кожної версії схеми"""
+    tables: Dict[str, Dict] = field(default_factory=dict)
+    delete_tables: Dict[str, Dict] = field(default_factory=dict)
+    parent_tables: Dict[str, Dict] = field(default_factory=dict)
+    delete_parent_tables: Dict[str, Dict] = field(default_factory=dict)
+    resolved_tables: Dict[str, Dict] = field(default_factory=dict)
+
+    def _load_table_schema(self, file_path: str):
+        """Завантажити схему таблиць з файлу"""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = yaml.safe_load(file)
+            if 'tables' in data:
+                self.tables.update(data['tables'])
+            elif 'parent_tables' in data:
+                # Якщо це файл з parent таблицями
+                parent_tables = data['parent_tables']
+                if parent_tables:  # Перевірка на None
+                    self.parent_tables.update(parent_tables)
+            elif 'delete_tables' in data:
+                delete_tables = data['delete_tables']
+                if delete_tables:
+                    self.delete_tables.update(delete_tables)
+            elif 'delete_parent_tables' in data:
+                # Якщо це файл з parent таблицями
+                delete_parent_tables = data['delete_parent_tables']
+                if delete_parent_tables:  # Перевірка на None
+                    self.delete_parent_tables.update(delete_parent_tables)
+        
+        for table_name in self.delete_tables.keys():
+            if table_name in self.tables:
+                del self.tables[table_name]  
+
+        for table_name in self.delete_parent_tables.keys():
+            if table_name in self.parent_tables:
+                del self.parent_tables[table_name]  
+
+    def _resolve_all_tables(self) -> None:
+        """Розв'язати наслідування для всіх таблиць"""
+        # Тепер таблиці в self.tables замість self.core_schema
+        for table_name, table_def in self.tables.items():
+            self.resolved_tables[table_name] = self._resolve_table_inheritance(table_name, table_def)
+        
+        # # Потім plugin таблиці
+        # for plugin_name, plugin_schema in self.plugin_schemas.items():
+        #     plugin_tables = plugin_schema.get('tables', {})
+        #     for table_name, table_def in plugin_tables.items():
+        #         # Додаємо префікс плагіна до назви таблиці якщо конфлікт
+        #         full_table_name = f"{plugin_name}_{table_name}" if table_name in self.resolved_tables else table_name
+        #         self.resolved_tables[full_table_name] = self.resolve_table_inheritance(table_name, table_def)
+
+    def _resolve_table_inheritance(self, table_name: str, table_def: Dict) -> Dict:
+        """Розв'язати наслідування для таблиці"""
+        resolved_table = table_def.copy()
+        
+        # Якщо є parent, об'єднуємо колонки
+        if 'parent' in table_def:
+            parent_name = table_def['parent']
+            if parent_name in self.parent_tables:
+                parent_columns = self.parent_tables[parent_name].copy()
+                table_columns = table_def.get('columns', {})
+                
+                # Об'єднуємо колонки (дочірні перевизначають батьківські)
+                merged_columns = self._merge_parent_columns(parent_columns, table_columns)
+                resolved_table['columns'] = merged_columns
+                
+                # Видаляємо parent з resolved таблиці
+                resolved_table.pop('parent', None)
+            else:
+                logger.error(f"Parent table '{parent_name}' not found for table '{table_name}'")
+                raise ValueError(f"Parent table '{parent_name}' not found")
+        
+        return resolved_table
+    
+    def _merge_parent_columns(self, parent_columns: Dict, table_columns: Dict) -> Dict:
+        """Об'єднати колонки батьківської та дочірньої таблиць"""
+        merged = parent_columns.copy()
+        merged.update(table_columns)
+        return merged
+    
 class SchemaManager:
     """Менеджер для роботи зі схемами бази даних"""
     
@@ -18,7 +101,11 @@ class SchemaManager:
         self.plugin_schemas: Dict[str, Dict] = {}
         self.resolved_tables: Dict[str, Dict] = {}
         self._loaded = False
-    
+        self.versions: Dict[str, VersionData] = {}
+        self.current_version: VersionData = VersionData()
+        # self.versions: Dict[str, Dict] = {}
+
+
     def load_all_schemas_yaml(self):
         """Завантажити всі схеми з усіх тек"""
         schema_files = self.discover_schema_files()
@@ -26,16 +113,31 @@ class SchemaManager:
         # Завантажити parent схеми
         # for parent_file in schema_files.get('parents', []):
         #     self._load_parent_schema(parent_file)
-        
+
+        # version_schema_files = {}
+        self.versions.clear()
         # Завантажити схеми таблиць (всі теки окрім parents)
         for version in schema_files:
             # if version == 'parents':
             #     continue  # parents вже завантажені вище
+            # self.versions.update({version: []})
+            # self.current_version = VersionData()
+            # [version] = {
+            #     "tables": {},
+            #     "parent_tables": {},
+            #     "resolved_tables": {}
+            # }
             for schema_file in schema_files[version]:
-                self._load_table_schema(schema_file)
-        
+                # version_schema_files.append(schema_file)
+                self.current_version._load_table_schema(schema_file)
+
+            self.versions[version] = deepcopy(self.current_version)
+            self.versions[version]._resolve_all_tables()
+
+            # self.versions[version] = schema_files[version]  # Зберігаємо список файлів
+
         # ДОДАТИ: Розв'язати наслідування
-        self._resolve_all_tables()
+        # self._resolve_all_tables()
         self._loaded = True
     
     def load_parent_tables(self) -> Dict:
@@ -85,48 +187,48 @@ class SchemaManager:
         
         return self.plugin_schemas
     
-    def _resolve_all_tables(self) -> None:
-        """Розв'язати наслідування для всіх таблиць"""
-        # Тепер таблиці в self.tables замість self.core_schema
-        for table_name, table_def in self.tables.items():
-            self.resolved_tables[table_name] = self.resolve_table_inheritance(table_name, table_def)
+    # def _resolve_all_tables(self) -> None:
+    #     """Розв'язати наслідування для всіх таблиць"""
+    #     # Тепер таблиці в self.tables замість self.core_schema
+    #     for table_name, table_def in self.tables.items():
+    #         self.resolved_tables[table_name] = self.resolve_table_inheritance(table_name, table_def)
         
-        # Потім plugin таблиці
-        for plugin_name, plugin_schema in self.plugin_schemas.items():
-            plugin_tables = plugin_schema.get('tables', {})
-            for table_name, table_def in plugin_tables.items():
-                # Додаємо префікс плагіна до назви таблиці якщо конфлікт
-                full_table_name = f"{plugin_name}_{table_name}" if table_name in self.resolved_tables else table_name
-                self.resolved_tables[full_table_name] = self.resolve_table_inheritance(table_name, table_def)
+    #     # Потім plugin таблиці
+    #     for plugin_name, plugin_schema in self.plugin_schemas.items():
+    #         plugin_tables = plugin_schema.get('tables', {})
+    #         for table_name, table_def in plugin_tables.items():
+    #             # Додаємо префікс плагіна до назви таблиці якщо конфлікт
+    #             full_table_name = f"{plugin_name}_{table_name}" if table_name in self.resolved_tables else table_name
+    #             self.resolved_tables[full_table_name] = self.resolve_table_inheritance(table_name, table_def)
     
-    def resolve_table_inheritance(self, table_name: str, table_def: Dict) -> Dict:
-        """Розв'язати наслідування для таблиці"""
-        resolved_table = table_def.copy()
+    # def resolve_table_inheritance(self, table_name: str, table_def: Dict) -> Dict:
+    #     """Розв'язати наслідування для таблиці"""
+    #     resolved_table = table_def.copy()
         
-        # Якщо є parent, об'єднуємо колонки
-        if 'parent' in table_def:
-            parent_name = table_def['parent']
-            if parent_name in self.parent_tables:
-                parent_columns = self.parent_tables[parent_name].copy()
-                table_columns = table_def.get('columns', {})
+    #     # Якщо є parent, об'єднуємо колонки
+    #     if 'parent' in table_def:
+    #         parent_name = table_def['parent']
+    #         if parent_name in self.parent_tables:
+    #             parent_columns = self.parent_tables[parent_name].copy()
+    #             table_columns = table_def.get('columns', {})
                 
-                # Об'єднуємо колонки (дочірні перевизначають батьківські)
-                merged_columns = self.merge_parent_columns(parent_columns, table_columns)
-                resolved_table['columns'] = merged_columns
+    #             # Об'єднуємо колонки (дочірні перевизначають батьківські)
+    #             merged_columns = self.merge_parent_columns(parent_columns, table_columns)
+    #             resolved_table['columns'] = merged_columns
                 
-                # Видаляємо parent з resolved таблиці
-                resolved_table.pop('parent', None)
-            else:
-                logger.error(f"Parent table '{parent_name}' not found for table '{table_name}'")
-                raise ValueError(f"Parent table '{parent_name}' not found")
+    #             # Видаляємо parent з resolved таблиці
+    #             resolved_table.pop('parent', None)
+    #         else:
+    #             logger.error(f"Parent table '{parent_name}' not found for table '{table_name}'")
+    #             raise ValueError(f"Parent table '{parent_name}' not found")
         
-        return resolved_table
+    #     return resolved_table
     
-    def merge_parent_columns(self, parent_columns: Dict, table_columns: Dict) -> Dict:
-        """Об'єднати колонки батьківської та дочірньої таблиць"""
-        merged = parent_columns.copy()
-        merged.update(table_columns)
-        return merged
+    # def merge_parent_columns(self, parent_columns: Dict, table_columns: Dict) -> Dict:
+    #     """Об'єднати колонки батьківської та дочірньої таблиць"""
+    #     merged = parent_columns.copy()
+    #     merged.update(table_columns)
+    #     return merged
     
     def generate_create_table_sql(self, table_name: str, table_def: Dict) -> str:
         """Згенерувати SQL CREATE TABLE"""
@@ -318,17 +420,17 @@ class SchemaManager:
     #     except Exception as e:
     #         logger.error(f"Failed to load parent schema from {file_path}: {e}")
 
-    def _load_table_schema(self, file_path: str):
-        """Завантажити схему таблиць з файлу"""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = yaml.safe_load(file)
-            if 'tables' in data:
-                self.tables.update(data['tables'])
-            elif 'parent_tables' in data:
-                # Якщо це файл з parent таблицями
-                parent_tables = data['parent_tables']
-                if parent_tables:  # Перевірка на None
-                    self.parent_tables.update(parent_tables)
+    # def _load_table_schema(self, file_path: str):
+    #     """Завантажити схему таблиць з файлу"""
+    #     with open(file_path, 'r', encoding='utf-8') as file:
+    #         data = yaml.safe_load(file)
+    #         if 'tables' in data:
+    #             self.tables.update(data['tables'])
+    #         elif 'parent_tables' in data:
+    #             # Якщо це файл з parent таблицями
+    #             parent_tables = data['parent_tables']
+    #             if parent_tables:  # Перевірка на None
+    #                 self.parent_tables.update(parent_tables)
     
     def generate_alter_commands(self, table_name: str, differences: Dict[str, List]) -> List[str]:
         """Згенерувати команди ALTER TABLE"""

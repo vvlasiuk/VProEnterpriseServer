@@ -1,0 +1,4 @@
+version: "1.0.0"
+
+delete_tables:
+  sys_test1_delete:

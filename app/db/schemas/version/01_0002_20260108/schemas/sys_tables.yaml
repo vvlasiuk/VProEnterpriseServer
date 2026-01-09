@@ -1,0 +1,52 @@
+version: "1.0.0"
+
+tables:
+  sys_tables:
+    parent: "system"
+    description: "System table for storing table metadata"
+    columns:
+      id:
+        type: "UUID"
+        nullable: true
+        comment: "Reference table"
+
+      parent_table_id:
+        type: "UUID"
+        nullable: true
+        foreign_key: "sys_tables.id"
+        comment: "Reference to parent table for inheritance"
+
+      create_table:
+        type: "BOOLEAN"
+        nullable: false
+        default: false
+        comment: "Flag to indicate if this entry creates a new table"
+
+      table_name:
+        type: "NVARCHAR(255)"
+        nullable: false
+        unique: false
+        comment: "Physical table name in database (e.g., cat_products)"
+      
+      display_name:
+        type: "JSONB"
+        nullable: false
+        comment: "Display names by language: {\"uk\": \"Товари\", \"en\": \"Products\"}"
+
+      is_prod:
+        type: "BOOLEAN"
+        nullable: false
+        default: false
+        comment: "Is this production version or in development"
+            
+      is_active:
+        type: "BOOLEAN"
+        nullable: false
+        default: true
+        comment: "Is this version active"
+      
+      test:
+        type: "BOOLEAN"
+        nullable: false
+        default: true
+        comment: "Test? DELETE LATER"      

@@ -1,0 +1,7 @@
+{
+  "version": "1.1.2",
+  "version_date": "2026-01-08",
+  "title": "Доопрацювання для клієнта системних таблиць",
+  "author": "VLSV",
+  "type_database_schemas": "sys_plugins"
+}

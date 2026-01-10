@@ -563,3 +563,9 @@ class SchemaManager:
         
         self._loaded = True
         logger.info(f"Loaded {len(self.resolved_tables)} schemas from model classes")
+
+    def get_types_database_schemas(self):
+        return {
+            "sys": 'Платформа',
+            "app": 'Базове рішення'
+        }

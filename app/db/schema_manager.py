@@ -95,11 +95,11 @@ class SchemaManager:
     
     def __init__(self):
         self.schemas_dir = Path(settings.DB_SCHEMAS_DIR)  # Перетворити в Path
-        self.parent_tables = {}
-        self.tables = {}
+        self.parent_tables = {} # delete
+        self.tables = {} # delete
         self.core_schema: Dict = {}
-        self.plugin_schemas: Dict[str, Dict] = {}
-        self.resolved_tables: Dict[str, Dict] = {}
+        self.plugin_schemas: Dict[str, Dict] = {} # delete
+        self.resolved_tables: Dict[str, Dict] = {} # delete
         self._loaded = False
         self.versions: Dict[str, VersionData] = {}
         self.current_version: VersionData = VersionData()

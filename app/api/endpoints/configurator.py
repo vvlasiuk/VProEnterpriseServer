@@ -18,8 +18,8 @@ async def get_model_schemas(current_user = Depends(get_current_user)) -> Dict[st
         
         return {
             "status": "success",
-            "count": len(schema_manager.resolved_tables),
-            "schemas": schema_manager.resolved_tables
+            "count": len(schema_manager.versions),
+            "schemas": schema_manager.versions
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load model schemas: {str(e)}")

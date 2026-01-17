@@ -16,9 +16,13 @@ async def get_catalog_table(
     if not model_name.startswith("Cat_"):
         return {"error": "Дозволено моделі з префіксом 'Cat'"}
     try:
-        # Формуємо шлях до модуля, наприклад: app.models.models_catalog.cat_products_brands
-        module_path = f"app.models.models_catalog.{model_name}"
+        # Перетворюємо назву класу (Cat_ProductBrand) в назву файлу (cat_product_brand)
+        module_file_name = model_name.lower()
+        # Формуємо шлях до модуля, наприклад: app.models.models_catalog.cat_product_brand
+        # module_path = f"app.models.models_catalog.{module_file_name}"
+        module_path = 'app.models.models_catalog.cat_product_brand'
         module = importlib.import_module(module_path)
+        
         # Ім'я класу має співпадати з model_name
         model_class = getattr(module, model_name)
         # instance = model_class()  # Якщо потрібен екземпляр

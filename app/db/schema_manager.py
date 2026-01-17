@@ -569,3 +569,49 @@ class SchemaManager:
             "sys": 'Платформа',
             "app": 'Базове рішення'
         }
+    
+    def get_sys_structure_versions_list(self):
+        import json
+        
+        versions = []
+        version_dir = Path(settings.DB_SCHEMAS_DIR)
+        
+        if not version_dir.exists():
+            logger.warning(f"Version directory not found: {version_dir}")
+            return versions
+        
+        # Отримати всі підкаталоги в каталозі version
+        for subdir in sorted(version_dir.iterdir()):
+            if subdir.is_dir():
+                version_info_file = subdir / "version_info.json"
+                
+                if version_info_file.exists():
+                    try:
+                        with open(version_info_file, 'r', encoding='utf-8') as f:
+                            version_data = json.load(f)
+                            # Додати ім'я каталогу для довідки
+                            version_data['folder_name'] = subdir.name
+
+                            parsed_version = self._parse_version_from_folder(subdir.name)
+                            version_data['version'] = parsed_version
+                            version_data['updated'] = False
+
+                            versions.append(version_data)
+                    except Exception as e:
+                        logger.error(f"Failed to load version_info from {version_info_file}: {e}")
+        
+        return versions
+    
+    def _parse_version_from_folder(self, folder_name: str) -> str:
+        """Парсити версію з назви папки формату: 01_0001_20260108_01"""
+        try:
+            parts = folder_name.split('_')
+            if len(parts) >= 4:
+                major = int(parts[0])
+                minor = int(parts[1])
+                patch = int(parts[-1])  # Остання частина
+                return f"{major}.{minor}.{patch}"
+        except (ValueError, IndexError) as e:
+            logger.warning(f"Could not parse version from folder name '{folder_name}': {e}")
+        
+        return ""

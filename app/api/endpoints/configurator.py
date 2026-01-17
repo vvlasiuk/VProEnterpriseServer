@@ -62,3 +62,18 @@ async def compare_schemas(current_user = Depends(get_current_user)) -> Dict[str,
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/sys_structure_versions_lists")
+async def get_sys_structure_versions_list(current_user = Depends(get_current_user)) -> Dict[str, Any]:
+    try:
+        schema_manager = SchemaManager()
+        # schema_manager.load_all_schemas()
+        versions_list = schema_manager.get_sys_structure_versions_list()
+        
+        return {
+            "status": "success",
+            "count": len(versions_list),
+            "schemas": versions_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load model schemas: {str(e)}")

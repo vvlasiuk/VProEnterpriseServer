@@ -25,6 +25,7 @@ MANIFEST
 .env
 .env.local
 .env.*.local
+connect_1c8/.env
 
 # SSL Certificates (ВАЖЛИВО!)
 certs/*.key

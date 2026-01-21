@@ -62,6 +62,8 @@ from app.core.app_globals import get_localizer, get_settings
 settings = get_settings()
 localizer = get_localizer()
 
+from app.integrations.connector_1с8 import connector_1c8
+
 # Lifecycle events
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -77,10 +79,16 @@ async def lifespan(app: FastAPI):
         logger.error(f"Database initialization failed: {e}")
         raise
     
+    # 1С коннектор - імпорт без ініціалізації (lazy)
+    # Підключення відбудеться автоматично при першому використанні
+    
     yield
     
     # Shutdown
+    connector_1c8.disconnect()  # Закриваємо якщо було підключення
+
     await db_manager.close_pool()
+    
     logger.info("Shutting down server")
 
 # FastAPI app
